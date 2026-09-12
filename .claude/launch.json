@@ -10,7 +10,8 @@
         "--",
         "--port",
         "5186",
-        "--strictPort"
+        "--strictPort",
+        "--host"
       ],
       "port": 5186,
       "autoPort": false

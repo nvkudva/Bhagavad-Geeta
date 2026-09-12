@@ -1,6 +1,8 @@
+import { Columns2, RectangleVertical } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { setBookTurn } from "../lib/book";
+import { useBookPages } from "../lib/media";
 import { chapterText, getChapterMeta, isReaderResident, loadReader, peekChapter } from "../lib/gita";
 import type { Verse } from "../lib/gita.types";
 import { syncBookUrl } from "../lib/router";
@@ -137,6 +139,10 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
      that is read back is how wide it ended up. Re-anchoring on the verse rather
      than the page is what makes a font swap, a resize or a language change
      land the reader back where they were. */
+  /* One page or two. The attribute drives --book-pages-per-spread, so the
+     fragmenter, the spread's proportion and the spine all follow one number. */
+  const [bookPages, toggleBookPages] = useBookPages();
+
   const measure = useCallback(() => {
     const viewport = viewportRef.current;
     const flow = flowRef.current;
@@ -155,7 +161,7 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
     setPage(pageOfVerse(anchor.current));
   }, [pageOfVerse]);
 
-  useLayoutEffect(measure, [measure, verses, language, sections, readingScale, font, chapter]);
+  useLayoutEffect(measure, [measure, verses, language, sections, readingScale, font, chapter, bookPages]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -346,7 +352,7 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
 
   return (
     <div className="book" style={{ "--book-page": page, "--book-drag": `${drag}px` } as React.CSSProperties}>
-      <div className="book-spread" data-opener={page === 0 ? "true" : undefined}>
+      <div className="book-spread" data-pages={bookPages} data-opener={page === 0 ? "true" : undefined}>
         <button type="button" className="book-turn book-turn-prev" onClick={() => turn(-1)} disabled={page === 0} aria-label="Previous page" aria-keyshortcuts="K PageUp" />
 
         <div className="book-viewport" ref={viewportRef} onScroll={onScroll} data-turning={turning ?? undefined}>
@@ -387,6 +393,10 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
         <div className="book-progress" aria-hidden>
           <span style={{ transform: `scaleX(${progress})` }} />
         </div>
+
+        <button type="button" className="book-pages-toggle" onClick={toggleBookPages} aria-pressed={bookPages === 2} title={bookPages === 2 ? "Single page" : "Two pages"} aria-label={bookPages === 2 ? "Show one page" : "Show two pages"}>
+          {bookPages === 2 ? <RectangleVertical aria-hidden /> : <Columns2 aria-hidden />}
+        </button>
       </div>
 
       <p className="book-sr-only" aria-live="polite" aria-atomic="true">

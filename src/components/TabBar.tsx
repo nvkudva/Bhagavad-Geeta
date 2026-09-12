@@ -33,12 +33,12 @@ const railFromStorage = (): boolean => {
   }
 };
 
-/* Book View is a desktop screen, so it is appended to the sidebar list and
-   never to TABS, which also drives the phone tab bar. The sidebar is
-   display:none below 900px, so the entry is structurally unreachable there —
-   no width check in JS. It sits directly under Home: a reading destination,
-   above the utility rows. */
+/* Book View is the second reading destination at every width: a tab on the
+   phone capsule and a row directly under Home in the sidebar, above the
+   utility rows. */
 const BOOK_TAB = { id: "book", label: "Book View", Icon: BookOpen, to: { name: "book", chapter: 1, verse: 1 } } as const satisfies (typeof TABS)[number];
+
+const TABS_WITH_BOOK = [TABS[0], BOOK_TAB, ...TABS.slice(1)];
 
 /** Search is the nav bar's own field at this width, not a row in the list. */
 const SIDEBAR_TABS = [TABS[0], BOOK_TAB, ...TABS.slice(1).filter((tab) => tab.id !== "search" && tab.id !== "read")];
@@ -64,7 +64,7 @@ export const TabBar: React.FC<{ route: Route }> = ({ route }) => {
 
   return (
     <nav className="app-tabbar" aria-label="Primary">
-      {TABS.map(({ id, label, Icon, to }) => {
+      {TABS_WITH_BOOK.map(({ id, label, Icon, to }) => {
         const isActive = active === id;
         return (
           <Link

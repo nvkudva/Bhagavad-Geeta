@@ -60,5 +60,9 @@
          phone can never apply. It sits after the module script so Vite emits its
          <link> after the entry's own index.css link and the cascade order holds. -->
     <link rel="stylesheet" href="/src/desktop.css" media="(min-width: 900px)" />
+    <!-- The Book View, at every width. No media attribute: the book is a phone
+         and tablet screen too. It loads last so its rules win on source order,
+         the way the desktop pass wins over index.css. -->
+    <link rel="stylesheet" href="/src/book.css" />
   </body>
 </html>

@@ -1,0 +1,594 @@
+/* The Book View, at every width. Split out of desktop.css when the book
+   stopped being a desktop screen: a phone and a tablet get the same spread,
+   one page instead of two, and a landscape hold opens the second page.
+
+   Loaded from index.html with no media attribute, after desktop.css, so its
+   rules win on source order the way the desktop pass wins over index.css.
+
+   Verify changes at 390/744/899/900/1279/1280px, portrait and landscape. */
+
+:root {
+  /* The spine is the widest space on the spread and the inner margin is wider
+     than the outer, as in print. The gutter is both inner margins meeting, so
+     it is defined from the margin rather than guessed. */
+  --book-margin-in: var(--sp-5);
+  --book-gutter: calc(2 * var(--book-margin-in));
+  --book-margin-out: var(--sp-5);
+  --book-margin-y: var(--sp-5);
+
+  /* Page count is a count, not a width: a width is only a minimum to the
+     fragmenter, so the laid-out column would never be the one the arithmetic
+     assumed. It is written from the data-pages rules below, which the
+     component sets — see useBookPages. */
+  --book-pages-per-spread: 1;
+
+  /* The book is the whole screen: only the safe areas and the screen's own
+     padding come out of it. The spread takes its width from this height, so
+     it is the one measurement the layout is built on. */
+  --book-pad: var(--sp-3);
+  --book-page-h: calc(100dvh - var(--sa-top) - var(--sa-bottom) - 2 * var(--book-pad) - 2 * var(--book-margin-y));
+  --book-turn-zone: 2.5rem;
+  --dur-book-turn: 420ms;
+
+  /* The book sets smaller than the card reader: a card shows one verse and
+     can afford 17px, a page of continuous text reads better at 15. Still
+     multiplied by --reading-scale, so the size control still works. */
+  --book-fs-verse: calc(1.25rem * var(--reading-scale));
+  --book-fs-translit: calc(0.75rem * var(--reading-scale));
+  --book-fs-trans: calc(0.9375rem * var(--reading-scale));
+  --book-fs-comment: calc(0.8125rem * var(--reading-scale));
+  --book-fs-gloss: calc(0.75rem * var(--reading-scale));
+
+  /* One baseline for the whole page. Leading in ems tracks the size and every
+     element lands somewhere different; on a 6px unit the column feet can line
+     up. Indic needs the taller pair — the vowel signs sit above and below the
+     line, and 24px on 15px clips them. */
+  --book-lh: calc(24px * var(--reading-scale));
+  --book-lh-indic: calc(30px * var(--reading-scale));
+  --book-lh-verse: calc(36px * var(--reading-scale));
+  --book-lh-small: calc(18px * var(--reading-scale));
+}
+
+/* A rule at the foot, not a meter: the page height is quantised to the
+   baseline so the column feet land on it. */
+@supports (height: round(down, 100px, 6px)) {
+  :root {
+    --book-page-h: round(down, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 2 * var(--book-pad) - 2 * var(--book-margin-y)), calc(6px * var(--reading-scale)));
+  }
+}
+
+/* From 900px the margins can be a printer's rather than a phone's. Only the
+   tokens change: --book-page-h is written once above and follows them, because
+   a custom property resolves where it is used. */
+@media (min-width: 900px) {
+  :root {
+    --book-margin-in: var(--sp-12);
+    /* Wide enough to hold the turn zones, which lie over the margin and must
+       never cover a character of the measure. */
+    --book-margin-out: var(--sp-16);
+    --book-margin-y: var(--sp-10);
+    --book-pad: var(--sp-6);
+    --book-turn-zone: 4rem;
+    --book-fs-verse: calc(1.375rem * var(--reading-scale));
+  }
+}
+
+/* ==================================================================== book
+   A spread is paper: opaque, no glass, no blur, no card. The whole chapter
+   is one multicol flow whose columns run off the right of a clipped
+   viewport; a page turn is one transform on that flow. Off-spread columns
+   are clipped rather than hidden, so find-in-page, Select All and a screen
+   reader's cursor all still traverse the chapter (docs/BOOK_VIEW_SPEC.md). */
+/* The one screen with no material: the aurora is painted out so the page is
+   paper on a desk rather than glass over a gradient. */
+.app-main[data-book="true"] {
+  /* The book screen sets its own padding: it is a reading screen, so there is
+     no tab bar to clear, and the standard main's allowance for one would push
+     the sheet off the bottom of the window. */
+  padding: calc(var(--sa-top) + var(--book-pad)) max(var(--book-pad), var(--sa-left)) calc(var(--sa-bottom) + var(--book-pad)) max(var(--book-pad), var(--sa-right));
+  background: var(--paper);
+}
+
+/* The shell's sidebar column is collapsed while the book is open: at every
+   width the sheet is the only thing on the display. */
+:root[data-book="true"] #root {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.book-spread {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  /* A phone is the page: the sheet takes the whole screen and no proportion
+     is imposed on it. From 900px it becomes a printed page again — see the
+     ratio rules below. */
+  height: calc(var(--book-page-h) + 2 * var(--book-margin-y));
+  width: 100%;
+  margin-inline: auto;
+  padding: var(--book-margin-y) var(--book-margin-out);
+  background: var(--book-paper);
+  color: var(--book-ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--el-3);
+}
+
+/* The binding: two pages of one sheet, shadowed where they fold. Drawn only
+   where there are two pages to fold between. */
+/* The page count the fragmenter works to. Set from the component rather than
+   from a breakpoint: the default follows the width and the orientation, but
+   the reader can override it either way. */
+.book-spread[data-pages="2"] {
+  --book-pages-per-spread: 2;
+}
+
+/* A page is 0.65:1 and a spread is two of them, so the sheet keeps the same
+   proportion whichever way it is opened. Only from 900px: below it the sheet
+   is the screen. The min() hands the ratio the width instead when the window
+   is too narrow to grant it the height. */
+@media (min-width: 900px) {
+  .book-spread {
+    --book-ratio: 0.65;
+    aspect-ratio: var(--book-ratio);
+    height: auto;
+    width: min(100%, calc(var(--book-ratio) * (var(--book-page-h) + 2 * var(--book-margin-y))));
+  }
+
+  .book-spread[data-pages="2"] {
+    --book-ratio: 1.3;
+  }
+}
+
+.book-spread[data-pages="2"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: var(--book-gutter);
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--book-ink) 9%, transparent) 46%, color-mix(in srgb, var(--book-ink) 13%, transparent) 50%, color-mix(in srgb, var(--book-ink) 9%, transparent) 54%, transparent);
+  pointer-events: none;
+}
+
+.book-viewport {
+  position: relative;
+  flex: 1;
+  /* Stretched by the spread rather than set from the token: when the ratio
+     takes its height from the width, the page must follow it down. */
+  min-height: 0;
+  overflow: hidden;
+  /* The leaf is a real sheet lifting off the spine: the depth is what makes
+     the turn read as paper rather than as a carousel. */
+  perspective: 2400px;
+  perspective-origin: center center;
+  /* A drag suspends the transition; the turn itself is the only animation. */
+  touch-action: pan-y;
+}
+
+.book-flow {
+  height: 100%;
+  column-count: var(--book-pages-per-spread);
+  column-gap: var(--book-gutter);
+  column-fill: auto;
+  /* --book-step is written from layout, not from the tokens: see measure().
+     Both it and --book-page come from the component. */
+  transform: translate3d(calc(var(--book-drag, 0px) - var(--book-page, 0) * var(--book-step, 0px)), 0, 0);
+}
+
+.book-flow:focus-visible {
+  outline: none;
+}
+
+/* The opener owns the first page alone. */
+.book-opener {
+  break-inside: avoid;
+  break-after: column;
+  /* Sunk from the head the way a title page is, rather than starting at the
+     top of the measure with two thirds of the leaf empty below it. */
+  padding-block: calc(var(--book-page-h) * 0.2) var(--sp-8);
+  text-align: center;
+}
+
+/* The numeral is the title page's largest mark, as it is in a printed
+   edition; the word "chapter" is not worth the same ink. */
+.book-opener-number {
+  margin: 0 0 var(--sp-6);
+  color: var(--book-ink-4);
+  font-family: var(--font-read);
+  font-size: var(--fs-title1);
+  line-height: 1;
+}
+
+.book-opener-name {
+  margin: 0;
+  font-family: var(--font-read);
+  font-size: var(--fs-title3);
+  font-weight: var(--fw-medium);
+  color: var(--book-ink);
+}
+
+.book-opener-meaning {
+  margin: var(--sp-2) 0 var(--sp-8);
+  color: var(--book-ink-3);
+  font-size: var(--fs-subhead);
+  font-style: italic;
+}
+
+.book-opener-summary {
+  max-width: 24rem;
+  margin: 0 auto;
+  color: var(--book-ink-2);
+  font-size: var(--book-fs-trans);
+  line-height: var(--book-lh);
+  text-align: start;
+}
+
+/* Space between verses, never a rule: the hanging number is the only mark. */
+.book-verse {
+  margin-block-start: var(--sp-8);
+}
+
+.book-verse:first-of-type {
+  margin-block-start: 0;
+}
+
+.book-scripture {
+  break-inside: avoid;
+  margin: 0;
+  text-align: center;
+  font-size: var(--book-fs-verse);
+  line-height: var(--book-lh-verse);
+  color: var(--book-ink);
+  white-space: pre-line;
+}
+
+/* The number hangs above its sloka rather than beside it: a negative inline
+   margin would sit outside the column box and be clipped at the gutter. */
+.book-folio-num {
+  display: block;
+  margin-bottom: var(--sp-2);
+  color: var(--book-ink-4);
+  font-family: var(--font-sys);
+  font-size: var(--fs-caption2);
+  letter-spacing: var(--tr-caps);
+}
+
+.book-verse-head {
+  break-after: avoid;
+}
+
+.book-translit {
+  break-inside: avoid;
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+  font-size: var(--book-fs-translit);
+  font-style: italic;
+  color: var(--book-ink-3);
+}
+
+.book-prose {
+  orphans: 3;
+  widows: 3;
+  margin: var(--sp-4) 0 0;
+}
+
+/* Justified with hyphens for Latin prose; Kannada and Telugu have no usable
+   hyphenation dictionary, so a ragged edge beats a river of holes. */
+.book-prose[lang="en"] {
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* Attribute selectors, as elsewhere: :lang(kn) would also catch a tagged
+   romanisation. */
+.book-prose[lang="kn"],
+.book-prose[lang="te"],
+.book-scripture[lang="kn"],
+.book-scripture[lang="te"],
+.book-scripture[lang="sa"] {
+  line-height: var(--book-lh-indic);
+}
+
+.book-scripture[lang="sa"],
+.book-scripture[lang="kn"],
+.book-scripture[lang="te"] {
+  line-height: var(--book-lh-verse);
+}
+
+.book-trans {
+  font-size: var(--book-fs-trans);
+  line-height: var(--book-lh);
+  color: var(--book-ink);
+}
+
+/* Indent or space, never both. */
+.book-comment {
+  margin-top: 0;
+  text-indent: var(--sp-6);
+  font-size: var(--book-fs-comment);
+  line-height: var(--book-lh);
+  color: var(--book-ink-2);
+}
+
+.book-attrib {
+  display: block;
+  margin-top: var(--sp-1);
+  text-indent: 0;
+  text-align: end;
+  color: var(--book-ink-4);
+  font-size: var(--fs-caption1);
+}
+
+.book-words {
+  font-size: var(--book-fs-gloss);
+  line-height: var(--book-lh-small);
+  color: var(--book-ink-3);
+}
+
+.book-words-label {
+  color: var(--book-ink-4);
+  font-size: var(--fs-caption2);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+}
+
+.book-loading {
+  margin: 0;
+  padding-block: var(--sp-16);
+  text-align: center;
+  color: var(--book-ink-3);
+}
+
+/* Outer-edge turn zones. Laid over the page's own margin rather than taking
+   a track of their own: they must never sit on the measure, and they must
+   not narrow it either. */
+.book-turn {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--book-margin-out);
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--r-md);
+  color: transparent;
+  cursor: pointer;
+}
+
+.book-turn-prev {
+  inset-inline-start: 0;
+}
+
+.book-turn-next {
+  inset-inline-end: 0;
+}
+
+.book-turn:disabled {
+  cursor: default;
+}
+
+.book-head,
+.book-folio {
+  position: absolute;
+  margin: 0;
+  color: var(--book-ink-4);
+  font-family: var(--font-sys);
+  font-size: var(--fs-caption2);
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.book-head {
+  top: var(--sp-4);
+}
+
+.book-head-verso {
+  inset-inline-start: var(--book-margin-out);
+}
+
+.book-head-recto {
+  inset-inline-end: var(--book-margin-out);
+}
+
+.book-folio {
+  bottom: var(--sp-4);
+}
+
+.book-folio-verso {
+  inset-inline-start: var(--book-margin-out);
+}
+
+.book-folio-recto {
+  inset-inline-end: var(--book-margin-out);
+}
+
+/* A title page carries neither head nor folio. */
+.book-spread[data-opener="true"] .book-head-verso,
+.book-spread[data-opener="true"] .book-folio-verso {
+  display: none;
+}
+
+.book-progress {
+  position: absolute;
+  inset-inline: var(--book-margin-out);
+  bottom: var(--sp-4);
+  height: 1px;
+  background: color-mix(in srgb, var(--book-ink-4) 22%, transparent);
+  overflow: hidden;
+}
+
+.book-progress > span {
+  display: block;
+  height: 100%;
+  background: color-mix(in srgb, var(--book-ink-4) 60%, transparent);
+  transform-origin: left center;
+}
+
+.book-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The turn, at any width. Was inside the desktop pass; the book is a phone
+   screen now, so the motion travels with it. */
+@media (prefers-reduced-motion: no-preference) {
+  /* The turn. The flow slides one spread, and for the length of that slide the
+     sheet lifts off the spine and settles back — the depth is a rotation about
+     the binding edge on the viewport, so the text itself is still one
+     composited translate and no glyph is re-rasterised mid-turn. A true curl
+     would need a second copy of the page and a repaint every frame. */
+  .book-flow {
+    transition: transform var(--dur-book-turn) var(--spring-gentle);
+  }
+
+  .book-viewport[data-turning] {
+    animation: book-leaf var(--dur-book-turn) var(--spring-gentle);
+  }
+
+  /* Nothing below is in the reduced-motion build: this whole block is inside
+     @media (prefers-reduced-motion: no-preference), so a turn there is a cut. */
+
+  .book-viewport[data-turning="prev"] {
+    animation-name: book-leaf-back;
+  }
+
+  /* The shadow that crosses the page as it falls: brighter where the sheet
+     lifts, dark in the fold it leaves behind. */
+  .book-viewport[data-turning]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    animation: book-sweep var(--dur-book-turn) linear;
+    pointer-events: none;
+  }
+
+  @keyframes book-leaf {
+    0% {
+      transform: rotateY(0deg);
+    }
+    45% {
+      transform: rotateY(-1.6deg);
+    }
+    100% {
+      transform: rotateY(0deg);
+    }
+  }
+
+  @keyframes book-leaf-back {
+    0% {
+      transform: rotateY(0deg);
+    }
+    45% {
+      transform: rotateY(1.6deg);
+    }
+    100% {
+      transform: rotateY(0deg);
+    }
+  }
+
+  @keyframes book-sweep {
+    0% {
+      background: linear-gradient(90deg, color-mix(in srgb, var(--book-ink) 16%, transparent), transparent 22%);
+    }
+    50% {
+      background: linear-gradient(90deg, transparent 30%, color-mix(in srgb, var(--book-ink) 10%, transparent) 52%, transparent 74%);
+    }
+    100% {
+      background: linear-gradient(90deg, transparent 78%, color-mix(in srgb, var(--book-ink) 16%, transparent));
+    }
+  }
+
+  .book-turn {
+    transition: color var(--dur-fast) var(--ease-out-ios);
+  }
+
+  .book-turn:hover:not(:disabled) {
+    color: var(--book-ink-4);
+  }
+
+  .book-progress > span {
+    transition: transform var(--dur-book-turn) var(--spring-gentle);
+  }
+}
+
+/* The button sits in the sheet's top-right corner on a phone, where the sheet
+   is the window; the running head steps aside for it. */
+.book-head-recto {
+  padding-inline-end: var(--sp-5);
+}
+
+@media (min-width: 900px) {
+  .book-head-recto {
+    padding-inline-end: 0;
+  }
+}
+
+/* The way out. Fixed to the window rather than the sheet: it is the shell's
+   control, not the book's furniture, and it must sit in the same corner
+   whatever proportion the spread has taken. */
+.book-close {
+  position: fixed;
+  top: max(var(--sa-top), var(--sp-1));
+  inset-inline-end: max(var(--sa-right), var(--sp-1));
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  /* Furniture, not a control: it reads as a mark in the corner until it is
+     looked for. No fill, no material — either would be a second object on a
+     screen that is meant to hold one sheet of paper. */
+  color: var(--ink-3);
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease-out-ios);
+}
+
+.book-close:hover,
+.book-close:focus-visible {
+  opacity: 1;
+}
+
+.book-close svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+/* The page-count toggle. It sits in the foot margin on the recto side, where
+   a printer would put nothing and a thumb can reach it. */
+.book-pages-toggle {
+  position: absolute;
+  bottom: var(--sp-2);
+  inset-inline-end: var(--book-margin-out);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--book-ink-4);
+  cursor: pointer;
+}
+
+.book-pages-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.5;
+}
+

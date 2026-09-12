@@ -1,4 +1,4 @@
-import { BookOpen, Check, Settings2 } from "lucide-react";
+import { BookOpen, Check, Settings2, X } from "lucide-react";
 import type React from "react";
 import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ChapterList } from "./components/ChapterList";
@@ -330,14 +330,9 @@ const SettingsScreen: React.FC = () => {
   );
 };
 
-/* A shared /book link opens on a phone too, but there is no book layout below
-   900px: it lands in the card reader and the URL is corrected to match. */
+/* The book is a screen at every width: one page on a phone held portrait, a
+   spread when it is turned, and the same flow either way. */
 const BookScreen: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse }) => {
-  const wide = useWide();
-  useEffect(() => {
-    if (!wide) navigate({ name: "verse", chapter, verse }, { replace: true });
-  }, [wide, chapter, verse]);
-  if (!wide) return <Reader chapter={chapter} verse={verse} />;
   return (
     <Suspense fallback={<p className="book-loading">Loading chapter…</p>}>
       <BookView chapter={chapter} verse={verse} />
@@ -492,6 +487,44 @@ const AppShell: React.FC = () => {
     return installKeys(() => actionsRef.current());
   }, [wide]);
 
+  /* The book takes the whole screen: no sidebar, no nav bar, no tab bar — a
+     sheet of paper on the display and nothing else. The attribute collapses
+     the shell's sidebar column; the close button is the way back out. */
+  useEffect(() => {
+    /* Leaving the book gives the display back. Written on the way *in* to the
+       other routes rather than in this effect's cleanup: StrictMode runs that
+       cleanup once on mount, which would drop the fullscreen the same commit
+       asked for. */
+    if (!inBook) {
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+      return;
+    }
+    document.documentElement.dataset.book = "true";
+    /* Real fullscreen, not merely a chrome-less page. The request needs
+       transient user activation, which the click that opened the book still
+       carries; a link opened cold has none and the request is declined, and
+       iOS Safari has no element fullscreen at all. Both fall back to the same
+       full-viewport layout, so nothing is conditional on it succeeding. */
+    void document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).catch(() => undefined);
+    return () => {
+      delete document.documentElement.dataset.book;
+    };
+  }, [inBook]);
+
+  if (inBook && route.name === "book") {
+    return (
+      <>
+        <main className="app-main" data-reader="true" data-book="true">
+          <Screen route={route} language={language} />
+        </main>
+
+        <button type="button" className="book-close" onClick={() => navigate({ name: "verse", chapter: route.chapter, verse: route.verse })} aria-label="Close book view">
+          <X aria-hidden />
+        </button>
+      </>
+    );
+  }
+
   return (
     <>
       <Sidebar route={route} title={APP_NAME[language]} />
@@ -500,13 +533,9 @@ const AppShell: React.FC = () => {
         onHomeClick={() => navigate({ name: "home" })}
         // iOS-style contextual leading item: absent on Home, and on a chapter it
         // is labelled with where it goes back to.
-        back={
-          inBook
-            ? { label: "Reader", onClick: () => navigate({ name: "verse", chapter: route.chapter, verse: route.verse }) }
-            : inReader
-              ? { label: "Home", onClick: () => navigate({ name: "home" }) }
-              : undefined
-        }
+        // The book has left through its own return above, so the reader is the
+        // only screen with a back item here.
+        back={inReader ? { label: "Home", onClick: () => navigate({ name: "home" }) } : undefined}
         // The number leads, as it does in the chapter list and the pager: it is
         // how a reader says where they are, and the name alone does not say it.
         title={reading ? `${route.chapter}. ${chapterName(route.chapter, language) ?? ""}`.trim() : APP_NAME[language]}
