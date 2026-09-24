@@ -329,26 +329,12 @@
     gap: var(--gap-verse);
   }
 
-  /* A card is still a screenful here, as it is on the phone: the column scrolls
-     one verse at a time and the reader is never shown two half-verses at once.
-     No content-visibility: skipped blocks are measured at their placeholder
+  /* The card is still a screenful here, as it is on the phone, and the base
+     rules give it that height and the commentary the remainder of it. No
+     content-visibility: skipped blocks are measured at their placeholder
      size, so a deep link into a long chapter lands on an estimate and then
      drifts as the real heights arrive. A chapter is 78 cards at most, which is
      cheap next to that. */
-  .verse-column .verse-block {
-    min-height: var(--reader-h);
-    /* So the commentary can take the slack. The sloka, the transliteration and
-       the translation are sized by their text; the commentary is the one band
-       that reads better tall, so it is the one that grows. */
-    display: flex;
-    flex-direction: column;
-  }
-  /* Grow into whatever the bands above leave, never shrink below its own prose:
-     a short commentary still reaches the foot of the card, a long one runs past
-     it and the page scrolls. */
-  .verse-column .verse-section-card.commentary {
-    flex: 1 0 auto;
-  }
   /* The anchor is the row, not the card: the row is what carries the verse id
      now that the glosses sit beside the card. */
   .verse-column .verse-row {

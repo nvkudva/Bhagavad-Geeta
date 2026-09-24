@@ -1873,14 +1873,11 @@ input:focus-visible {
 
 .verse-track {
   display: flex;
-  /* Each slide is as tall as its own verse, and the track is as tall as the one
-     being read — VerseViewer measures it into --track-h. Left to size itself the
-     track would take the tallest slide mounted, and a short verse beside a long
-     one would trail a screenful of empty scroll. A taller neighbour is clipped
-     until you land on it, which is below the fold: every card is at least a page
-     tall and each verse starts at its own top. */
+  /* Every card is exactly one screenful, so the track is that height too and
+     never has to be measured: --reader-h is the card's own height, the track's
+     height, and what the shell's padding leaves between the bar and the pager. */
   align-items: flex-start;
-  height: var(--track-h, auto);
+  height: var(--reader-h);
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
@@ -1912,16 +1909,41 @@ input:focus-visible {
   scroll-snap-stop: always;
 }
 
-/* Sized by its own text: a card at least fills the page, and a long verse runs
-   past it and is read by scrolling the page, not a second bar inside the card. */
+/* One screenful, and no more: the card never pushes the page into a second
+   scroll. The bands inside it share the height — the commentary takes what the
+   sloka, the transliteration and the translation leave, and whatever band's
+   text runs past its share scrolls within itself. `min-height: 0` on a band is
+   what lets a flex item be shorter than its content at all. */
 .verse-block {
-  min-height: var(--reader-h);
+  height: var(--reader-h);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: var(--pad-card);
   border-radius: var(--r-xl);
   box-shadow: var(--spec);
 }
 
+/* A band that can end up shorter than its text, so it scrolls rather than
+   clipping it. At the default text size nothing here overflows; the verse that
+   does it is a long one read large. */
+.verse-text-wrapper,
+.verse-transliteration-wrapper,
+.verse-section-card {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.verse-text-wrapper,
+.verse-transliteration-wrapper,
+.verse-section-card:not(.commentary) {
+  flex: 0 1 auto;
+}
+
 .verse-viewer-title-wrapper {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2006,20 +2028,50 @@ input:focus-visible {
   border-radius: calc(var(--r-xl) - var(--pad-card) / 2);
 }
 
+/* The commentary is the band that owns whatever height the verse leaves over,
+   and it is the one band long enough to need it: its prose scrolls inside the
+   card, so the card stays exactly one screenful. */
 .verse-section-card.commentary {
   margin-top: var(--sp-3);
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.commentary > .verse-tabs,
+.commentary > .verse-pane-label,
+.commentary > .verse-section-attribution {
+  flex: 0 0 auto;
+}
+
+.commentary > .verse-section-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 /* Both tab panels occupy one grid cell, so the card is as tall as the taller
    of them. Switching tabs then fills the same envelope rather than resizing
    the verse, and the shorter panel stretches instead of leaving the card
-   short. visibility, not display, is what keeps the cell measured. */
+   short. visibility, not display, is what keeps the cell measured. The row is
+   capped at the card's own remainder (minmax(0, 1fr)) so the taller panel
+   scrolls within that envelope rather than setting the card's height. */
 .verse-tabpanels {
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .verse-tabpanels > * {
   grid-area: 1 / 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .verse-tabpanels > [data-active="false"] {
@@ -2084,7 +2136,9 @@ input:focus-visible {
 
 /* iOS 26 controls hover above the content rather than sitting on the edge:
    an inset capsule with its own shadow, so the page visibly continues beneath
-   and behind it. It stacks above the tab bar, which it replaces in the reader. */
+   and behind it. It stacks above the tab bar, which it replaces in the reader.
+   The phone's capsule spans the screen — inset by the safe area and nothing
+   more — so prev/next sit at the two edges the thumb already travels to. */
 .verse-pager {
   position: fixed;
   left: max(var(--sp-4), var(--sa-left));
@@ -2092,8 +2146,6 @@ input:focus-visible {
   bottom: calc(var(--sa-bottom) + var(--float-gap));
   z-index: 99;
   min-height: var(--pager-h);
-  width: fit-content;
-  margin-inline: auto;
   padding: var(--sp-1) var(--sp-2);
   display: flex;
   align-items: center;

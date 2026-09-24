@@ -84,9 +84,7 @@ const railStep = (go: () => void, dir: "prev" | "next"): void => {
 
 /** Slides kept either side of the active verse. One: scroll-snap-stop makes a
  *  gesture reach exactly one neighbour, so that neighbour is always painted
- *  before the finger moves — and the track is only ever as tall as the tallest
- *  slide mounted, so a wider window would strand the short card in a tall one's
- *  dead space. */
+ *  before the finger moves. */
 const WINDOW = 1;
 
 const reducedMotion = (): boolean => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -289,7 +287,6 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
   const columnRef = useRef<HTMLDivElement | null>(null);
   const railRef = useRef<HTMLElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
-  const activeSlideRef = useRef<HTMLDivElement | null>(null);
   /** The verse currently under the snap point. Mirrors `active` without the
    *  render lag, so the scroll listener can tell a settled page from a new one. */
   const activeRef = useRef<number | null>(null);
@@ -351,32 +348,6 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
     const smooth = !cold && Math.abs(at - index) === 1 && !reducedMotion();
     track.scrollTo({ left: index * width, behavior: smooth ? "smooth" : "auto" });
   }, [chapter, index, active, count, wide]);
-
-  // The track can only be one height, and it has to be the height of the verse
-  // being read. Observed rather than computed once: the card resizes when the
-  // reading face, the shown sections or the window width change.
-  useLayoutEffect(() => {
-    if (wide) return;
-    const track = trackRef.current;
-    const slide = activeSlideRef.current;
-    if (!track || !slide) return;
-    const write = (): void => track.style.setProperty("--track-h", `${slide.offsetHeight}px`);
-    write();
-    const observer = new ResizeObserver(write);
-    observer.observe(slide);
-    return () => observer.disconnect();
-    // `count` because the track only exists once the chapter has arrived, which
-    // is a render later than the one that set `active` on a cold open.
-  }, [chapter, active, count, wide]);
-
-  // A card is as tall as its verse, so the page's scroll extent changes with the
-  // page. Every verse starts at its own top: without this the browser would clamp
-  // a deep scroll position against a shorter neighbour and jog the view sideways
-  // mid-swipe.
-  useEffect(() => {
-    if (wide) return;
-    if (window.scrollY !== 0) window.scrollTo(0, 0);
-  }, [active, wide]);
 
   // Track -> route. replaceState only: paging must never push history.
   useEffect(() => {
@@ -618,7 +589,7 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
               measurement is needed to size them. */}
           <div className="verse-track-spacer" style={{ flexBasis: `${start * 100}%` }} aria-hidden />
           {verses.slice(start, end + 1).map((verse) => (
-            <div className="verse-slide" key={verse.verse_number} ref={verse.verse_number === active ? activeSlideRef : undefined}>
+            <div className="verse-slide" key={verse.verse_number}>
               <VerseBlock chapter={chapter} verse={verse} language={language} sections={sections} panes={false} />
             </div>
           ))}
