@@ -9,13 +9,10 @@ interface HeaderProps {
    *  labelled with the screen it returns to. */
   back?: { label: string; onClick: () => void };
   title: string;
-  /** Reading language of `title` and `largeTitle`. Untagged, an Indic title
-   *  renders in the Latin face's fallback at Latin line-height, and the tall
-   *  Kannada and Telugu glyphs clip against the bar's overflow. */
+  /** Reading language of `title`. Untagged, an Indic title renders in the Latin
+   *  face's fallback at Latin line-height, and the tall Kannada and Telugu
+   *  glyphs clip against the bar's overflow. */
   titleLang?: string;
-  /** When present, a 34px large title sits below the bar and collapses into it
-   *  on scroll, the way a UINavigationBar with prefersLargeTitles does. */
-  largeTitle?: string;
   /** Trailing bar item, in the slot a UINavigationItem's rightBarButtonItem
    *  occupies. Used to reach Settings on screens with no tab bar. */
   trailing?: React.ReactNode;
@@ -24,8 +21,8 @@ interface HeaderProps {
   search?: { query: string; placeholder: string; onQueryChange: (query: string) => void };
 }
 
-/** The scroll distance the condense is spread over — one line of the large
- *  title, so the material is fully in by the time that title has slid under it. */
+/** The scroll distance the bar's material takes to come in — one flick of the
+ *  thumb, so the chrome is fully there before the reader has gone far. */
 const CONDENSE_OVER = 52;
 
 /** A live field, not a launcher: typing walks the search route forward, and the
@@ -90,14 +87,14 @@ const NavSearch: React.FC<NonNullable<HeaderProps["search"]>> = ({ query, placeh
 
 /** The edge-to-edge sticky nav bar of DESIGN_PLAN §3.3. Global navigation lives
  *  in the bottom tab bar; the nav carries only the leading item and the title. */
-export const Header: React.FC<HeaderProps> = ({ onHomeClick, back, title, titleLang, largeTitle, trailing, search }) => {
+export const Header: React.FC<HeaderProps> = ({ onHomeClick, back, title, titleLang, trailing, search }) => {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let frame = 0;
-    // Material, hairline and large-title collapse all hang off this one 0→1
-    // variable, written straight onto the element: the bar tracks the finger,
-    // and React never re-renders on scroll.
+    // Material and hairline hang off this one 0→1 variable, written straight
+    // onto the element: the bar tracks the finger, and React never re-renders
+    // on scroll.
     const write = () => {
       frame = 0;
       const progress = Math.min(1, Math.max(0, window.scrollY / CONDENSE_OVER));
@@ -115,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({ onHomeClick, back, title, titleL
   }, []);
 
   return (
-    <header className="app-nav" ref={ref} data-large={largeTitle ? "true" : "false"}>
+    <header className="app-nav" ref={ref}>
       <div className="app-nav-bar">
         {back ? (
           <button type="button" onClick={back.onClick} className="nav-back-button pressable" aria-label={back.label}>
@@ -123,31 +120,22 @@ export const Header: React.FC<HeaderProps> = ({ onHomeClick, back, title, titleL
           </button>
         ) : (
           <button type="button" onClick={onHomeClick} className="nav-logo-button pressable" aria-label={title}>
-            <Logo size={40} />
-            {!largeTitle && (
-              <span className="nav-title" lang={titleLang}>
-                {title}
-              </span>
-            )}
+            <Logo size={28} />
           </button>
         )}
 
-        {(back || largeTitle) && (
-          <span className="nav-title nav-title-compact" lang={titleLang}>
-            {title}
-          </span>
-        )}
+        {/* One title for the bar, whatever is leading it: the app name beside the
+            mark where the mark shows, the chapter beside the chevron where it does
+            not, and the name at the leading edge from 900px, where the mark moves
+            into the sidebar. */}
+        <button type="button" onClick={onHomeClick} className="nav-title nav-title-compact nav-title-button" lang={titleLang}>
+          {title}
+        </button>
 
         {search && <NavSearch {...search} />}
 
         {trailing}
       </div>
-
-      {largeTitle && (
-        <h1 className="nav-large-title" lang={titleLang}>
-          {largeTitle}
-        </h1>
-      )}
     </header>
   );
 };

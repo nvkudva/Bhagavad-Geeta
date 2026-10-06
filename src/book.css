@@ -14,7 +14,18 @@
   --book-margin-in: var(--sp-5);
   --book-gutter: calc(2 * var(--book-margin-in));
   --book-margin-out: var(--sp-5);
-  --book-margin-y: var(--sp-5);
+  /* Head and foot are separate because they hold different furniture. The head
+     carries a line of running head and a 44pt control in the corner; the foot
+     carries folios, the progress rule and the page-count control. Either band
+     has to be deep enough to hold its tallest piece, and no piece of furniture
+     may reach into the measure — the text starts where the band ends. */
+  --book-margin-head: var(--sp-12);
+  --book-margin-foot: var(--sp-16);
+
+  /* The one control on the paper. It is a lift of the stock itself, not glass:
+     a book has no material behind it, so it is the page colour lightened. */
+  --book-glass: color-mix(in srgb, white 92%, var(--book-paper));
+  --book-glass-press: color-mix(in srgb, white 40%, var(--book-paper));
 
   /* Page count is a count, not a width: a width is only a minimum to the
      fragmenter, so the laid-out column would never be the one the arithmetic
@@ -26,7 +37,7 @@
      padding come out of it. The spread takes its width from this height, so
      it is the one measurement the layout is built on. */
   --book-pad: var(--sp-3);
-  --book-page-h: calc(100dvh - var(--sa-top) - var(--sa-bottom) - 2 * var(--book-pad) - 2 * var(--book-margin-y));
+  --book-page-h: calc(100dvh - var(--sa-top) - var(--sa-bottom) - 2 * var(--book-pad) - var(--book-margin-head) - var(--book-margin-foot));
   --book-turn-zone: 2.5rem;
   --dur-book-turn: 420ms;
 
@@ -53,7 +64,7 @@
    baseline so the column feet land on it. */
 @supports (height: round(down, 100px, 6px)) {
   :root {
-    --book-page-h: round(down, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 2 * var(--book-pad) - 2 * var(--book-margin-y)), calc(6px * var(--reading-scale)));
+    --book-page-h: round(down, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 2 * var(--book-pad) - var(--book-margin-head) - var(--book-margin-foot)), calc(6px * var(--reading-scale)));
   }
 }
 
@@ -66,7 +77,10 @@
     /* Wide enough to hold the turn zones, which lie over the margin and must
        never cover a character of the measure. */
     --book-margin-out: var(--sp-16);
-    --book-margin-y: var(--sp-10);
+    /* The control in the corner is 32px here rather than 36, but the band is
+       deeper still: a printed page has the widest head above its fore-edge. */
+    --book-margin-head: var(--sp-16);
+    --book-margin-foot: var(--sp-16);
     --book-pad: var(--sp-6);
     --book-turn-zone: 4rem;
     --book-fs-verse: calc(1.375rem * var(--reading-scale));
@@ -102,10 +116,10 @@
   /* A phone is the page: the sheet takes the whole screen and no proportion
      is imposed on it. From 900px it becomes a printed page again — see the
      ratio rules below. */
-  height: calc(var(--book-page-h) + 2 * var(--book-margin-y));
+  height: calc(var(--book-page-h) + var(--book-margin-head) + var(--book-margin-foot));
   width: 100%;
   margin-inline: auto;
-  padding: var(--book-margin-y) var(--book-margin-out);
+  padding: var(--book-margin-head) var(--book-margin-out) var(--book-margin-foot);
   background: var(--book-paper);
   color: var(--book-ink);
   border-radius: var(--r-md);
@@ -130,7 +144,7 @@
     --book-ratio: 0.65;
     aspect-ratio: var(--book-ratio);
     height: auto;
-    width: min(100%, calc(var(--book-ratio) * (var(--book-page-h) + 2 * var(--book-margin-y))));
+    width: min(100%, calc(var(--book-ratio) * (var(--book-page-h) + var(--book-margin-head) + var(--book-margin-foot))));
   }
 
   .book-spread[data-pages="2"] {
@@ -148,6 +162,17 @@
   transform: translateX(-50%);
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--book-ink) 9%, transparent) 46%, color-mix(in srgb, var(--book-ink) 13%, transparent) 50%, color-mix(in srgb, var(--book-ink) 9%, transparent) 54%, transparent);
   pointer-events: none;
+}
+
+/* The running head reads as a title, not a label: the reading face, italic,
+   in the title's own case. */
+.book-spread .book-head {
+  font-family: var(--font-read);
+  font-size: var(--fs-footnote);
+  font-style: italic;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--book-ink-3);
 }
 
 .book-viewport {
@@ -202,9 +227,21 @@
 .book-opener-name {
   margin: 0;
   font-family: var(--font-read);
-  font-size: var(--fs-title3);
-  font-weight: var(--fw-medium);
+  font-size: var(--fs-title1);
+  font-weight: var(--fw-regular);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
   color: var(--book-ink);
+}
+
+/* A short centred rule between the title and its meaning, as a title page has. */
+.book-opener-name::after {
+  content: "";
+  display: block;
+  width: 2.5rem;
+  margin: var(--sp-4) auto 0;
+  border-top: 1px solid var(--book-rule);
 }
 
 .book-opener-meaning {
@@ -221,6 +258,59 @@
   font-size: var(--book-fs-trans);
   line-height: var(--book-lh);
   text-align: start;
+}
+
+/* The contents leaf: a title, then one line per chapter, number hanging. */
+.book-toc {
+  break-inside: avoid;
+  break-after: column;
+  padding-block: var(--sp-8) 0;
+}
+
+.book-toc-title {
+  margin: 0 0 var(--sp-6);
+  font-family: var(--font-read);
+  font-size: var(--fs-title3);
+  font-weight: var(--fw-regular);
+  text-align: center;
+  color: var(--book-ink);
+}
+
+.book-toc-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.book-toc-entry {
+  display: flex;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-1) 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-read);
+  font-size: var(--book-fs-trans);
+  line-height: 1.35;
+  text-align: start;
+  color: var(--book-ink-2);
+  cursor: pointer;
+}
+
+.book-toc-entry:hover,
+.book-toc-entry[aria-current="true"] {
+  color: var(--book-ink);
+}
+
+.book-toc-entry[aria-current="true"] .book-toc-name {
+  font-style: italic;
+}
+
+.book-toc-num {
+  flex: 0 0 1.75em;
+  text-align: end;
+  color: var(--book-ink-4);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Space between verses, never a rule: the hanging number is the only mark. */
@@ -380,24 +470,27 @@
   pointer-events: none;
 }
 
+/* Everything in this band is furniture, and the band is exactly as deep as the
+   tallest thing in it — the close button's 44pt target, inset 5px from the
+   corner. The measure starts where the band ends, so no control and no running
+   head can ever sit on a line of text. */
 .book-head {
-  top: var(--sp-4);
+  top: var(--sp-3);
 }
 
+/* Only the verso takes a running head: the recto's top corner is the close
+   button's. */
 .book-head-verso {
   inset-inline-start: var(--book-margin-out);
 }
 
-.book-head-recto {
-  inset-inline-end: var(--book-margin-out);
-}
-
+/* Same arithmetic at the foot: folios on the outer corners, the page-count
+   control between them, and the progress rule above all three, close under the
+   measure where a fore-edge rule belongs. */
 .book-folio {
-  bottom: var(--sp-4);
-}
-
-.book-folio-verso {
-  inset-inline-start: var(--book-margin-out);
+  bottom: var(--sp-5);
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .book-folio-recto {
@@ -405,15 +498,14 @@
 }
 
 /* A title page carries neither head nor folio. */
-.book-spread[data-opener="true"] .book-head-verso,
-.book-spread[data-opener="true"] .book-folio-verso {
+.book-spread[data-opener="true"] .book-head-verso {
   display: none;
 }
 
 .book-progress {
   position: absolute;
   inset-inline: var(--book-margin-out);
-  bottom: var(--sp-4);
+  bottom: calc(var(--book-margin-foot) - var(--sp-2));
   height: 1px;
   background: color-mix(in srgb, var(--book-ink-4) 22%, transparent);
   overflow: hidden;
@@ -519,74 +611,102 @@
   }
 }
 
-/* The button sits in the sheet's top-right corner on a phone, where the sheet
-   is the window; the running head steps aside for it. */
-.book-head-recto {
-  padding-inline-end: var(--sp-5);
-}
-
-@media (min-width: 900px) {
-  .book-head-recto {
-    padding-inline-end: 0;
-  }
-}
-
-/* The way out. Fixed to the window rather than the sheet: it is the shell's
-   control, not the book's furniture, and it must sit in the same corner
-   whatever proportion the spread has taken. */
+/* The way out. A control, not a mark: the same --control-round circle as the nav
+   bar's back chevron, so the two read as one family. It is anchored to the sheet
+   rather than the window because the window's corner and the page's corner are
+   only the same place on a phone — from 900px the spread is a centred rectangle,
+   and a window-fixed button would stay behind on the desk while the paper moved
+   away from it. It owns that corner: the recto carries no running head.
+   It is not glass. There is nothing behind it but paper, so it is the stock
+   itself lifted with white — present enough to read as a control, pale enough
+   to stay out of the way of the page. */
 .book-close {
-  position: fixed;
-  top: max(var(--sa-top), var(--sp-1));
-  inset-inline-end: max(var(--sa-right), var(--sp-1));
-  z-index: 200;
+  position: absolute;
+  top: 5px;
+  inset-inline-end: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: var(--control-round);
+  height: var(--control-round);
   padding: 0;
-  border: 0;
+  background: var(--book-glass);
+  border: 0.5px solid var(--book-rule);
   border-radius: 50%;
-  background: none;
-  /* Furniture, not a control: it reads as a mark in the corner until it is
-     looked for. No fill, no material — either would be a second object on a
-     screen that is meant to hold one sheet of paper. */
-  color: var(--ink-3);
-  opacity: 0.5;
+  box-shadow: var(--el-2);
+  color: var(--book-ink);
   cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease-out-ios);
+  transition: color var(--dur-fast) var(--ease-out-ios), background-color var(--dur-fast) var(--ease-out-ios);
+}
+
+/* The disc is a control's width, the hit area 44pt. It runs past the disc, so
+   the corner does not have to be shared with the next-page zone under it. The
+   head band is sized for that larger box — see --book-margin-head. */
+.book-close::after {
+  content: "";
+  position: absolute;
+  inset: calc((var(--control-round) - var(--tap-min)) / 2);
 }
 
 .book-close:hover,
 .book-close:focus-visible {
-  opacity: 1;
+  color: var(--book-ink);
+}
+
+.book-close:active {
+  background: var(--book-glass-press);
 }
 
 .book-close svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   stroke-width: 2;
 }
 
-/* The page-count toggle. It sits in the foot margin on the recto side, where
-   a printer would put nothing and a thumb can reach it. */
-.book-pages-toggle {
+/* The foot controls: contents on the outer-left corner, text size and the
+   page-count toggle centred, the folio on the right. */
+.book-foot-controls {
   position: absolute;
-  bottom: var(--sp-2);
-  inset-inline-end: var(--book-margin-out);
+  bottom: var(--sp-3);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.book-foot-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--tap-min);
-  height: var(--tap-min);
+  width: var(--control-round);
+  height: var(--control-round);
+  padding: 0;
   border: 0;
   border-radius: var(--r-sm);
   background: none;
-  color: var(--book-ink-4);
+  color: var(--book-ink-3);
   cursor: pointer;
 }
 
-.book-pages-toggle svg {
+.book-foot-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.book-foot-button::after {
+  content: "";
+  position: absolute;
+  inset: calc((var(--control-round) - var(--tap-min)) / 2);
+}
+
+.book-toc-button {
+  position: absolute;
+  bottom: var(--sp-3);
+  inset-inline-start: calc(var(--book-margin-out) - (var(--control-round) - 18px) / 2);
+}
+
+.book-foot-button svg {
   width: 18px;
   height: 18px;
   stroke-width: 1.5;

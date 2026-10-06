@@ -1,13 +1,13 @@
-import { Columns2, RectangleVertical } from "lucide-react";
+import { AArrowDown, AArrowUp, Columns2, List, RectangleVertical, X } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { setBookTurn } from "../lib/book";
 import { useBookPages } from "../lib/media";
-import { chapterText, getChapterMeta, isReaderResident, loadReader, peekChapter } from "../lib/gita";
+import { chapterText, getChapterMeta, getChapters, isReaderResident, loadReader, peekChapter } from "../lib/gita";
 import type { Verse } from "../lib/gita.types";
-import { syncBookUrl } from "../lib/router";
+import { navigate, syncBookUrl } from "../lib/router";
 import { readableScripture } from "../lib/scripture";
-import { useSettings } from "../lib/settings";
+import { READING_SCALES, useSettings } from "../lib/settings";
 
 /* Book View: one chapter set as a continuous flow and fragmented into pages by
    the browser's own multicol engine (docs/BOOK_VIEW_SPEC.md). Nothing here is a
@@ -19,6 +19,7 @@ import { useSettings } from "../lib/settings";
    traverse the chapter as one text. */
 
 const NO_VERSES: readonly Verse[] = [];
+const CHAPTERS = getChapters();
 
 /** Turn threshold for a trackpad flick, and for a mouse wheel notch (~100px),
  *  which must not turn a page on its own. */
@@ -87,7 +88,8 @@ const VerseRun: React.FC<{ verse: Verse; chapter: number; language: string; sect
 };
 
 const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse }) => {
-  const { language, sections, readingScale, font } = useSettings();
+  const { language, sections, readingScale, setReadingScale, font } = useSettings();
+  const scaleIndex = READING_SCALES.indexOf(readingScale);
   const [, onChapterLoaded] = useReducer((n: number) => n + 1, 0);
   const verses = peekChapter(chapter) ?? NO_VERSES;
   const meta = getChapterMeta(chapter);
@@ -101,8 +103,6 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
   const [pages, setPages] = useState(1);
   const [drag, setDrag] = useState(0);
   const [announce, setAnnounce] = useState("");
-  /** The verses that start on the spread, for the recto's running head. */
-  const [range, setRange] = useState<[number, number] | null>(null);
   /** Which way the leaf is falling, for the length of one turn. */
   const [turning, setTurning] = useState<"next" | "prev" | null>(null);
   /** The verse the spread is anchored to. A page number means nothing across a
@@ -119,6 +119,15 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
       cancelled = true;
     };
   }, [chapter]);
+
+  /** Which spread an element in the flow starts on. */
+  const pageOfElement = useCallback((el: Element | null): number => {
+    const flow = flowRef.current;
+    if (!flow || !el) return 0;
+    const { step, perSpread } = geom.current;
+    const offset = el.getBoundingClientRect().left - flow.getBoundingClientRect().left;
+    return Math.max(0, Math.floor(Math.floor(offset / step) / perSpread) * perSpread);
+  }, []);
 
   /** Which page a verse's run starts on. */
   const pageOfVerse = useCallback(
@@ -190,18 +199,16 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
     if (!flow) return;
     const left = flow.getBoundingClientRect().left;
     let found = 0;
-    const spread: number[] = [];
     for (const v of verses) {
       const el = document.getElementById(anchorId(chapter, v.verse_number));
       if (!el) continue;
       const col = Math.floor((el.getBoundingClientRect().left - left) / step);
       if (col >= page && col < page + perSpread) {
-        if (!found) found = v.verse_number;
-        spread.push(v.verse_number);
+        found = v.verse_number;
+        break;
       }
     }
     if (found) anchor.current = found;
-    setRange(spread.length ? [spread[0], spread[spread.length - 1]] : null);
     syncBookUrl(chapter, anchor.current);
 
     const first = page + 1;
@@ -225,6 +232,18 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
         turnTimer.current = window.setTimeout(() => setTurning(null), 460);
       }
       return next;
+    });
+  }, []);
+
+  /** A jump to a spread, turning the leaf the way it falls. */
+  const goTo = useCallback((target: number) => {
+    setPage((p) => {
+      if (target !== p) {
+        setTurning(target > p ? "next" : "prev");
+        window.clearTimeout(turnTimer.current);
+        turnTimer.current = window.setTimeout(() => setTurning(null), 460);
+      }
+      return target;
     });
   }, []);
 
@@ -357,6 +376,31 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
 
         <div className="book-viewport" ref={viewportRef} onScroll={onScroll} data-turning={turning ?? undefined}>
           <div className="book-flow" ref={flowRef} tabIndex={0} role="region" aria-label={`Chapter ${chapter}, ${name.text}, book view`}>
+            {/* The contents are the book's first leaf, turned to like any other. */}
+            <nav className="book-toc" aria-label="Contents">
+              <h2 className="book-toc-title">Contents</h2>
+              <ol className="book-toc-list">
+                {CHAPTERS.map((c) => {
+                  const entry = chapterText(c, "name", language);
+                  const current = c.id === chapter;
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        className="book-toc-entry"
+                        aria-current={current ? "true" : undefined}
+                        onClick={() => (current ? goTo(pageOfElement(document.querySelector(".book-opener"))) : navigate({ name: "book", chapter: c.id, verse: 1 }))}>
+                        <span className="book-toc-num">{c.id}</span>
+                        <span className="book-toc-name" lang={entry.lang}>
+                          {entry.text}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+
             <header className="book-opener">
               <p className="book-opener-number">Chapter {chapter}</p>
               <h1 className="book-opener-name" lang={name.lang}>
@@ -377,25 +421,38 @@ const BookView: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse
         <button type="button" className="book-turn book-turn-next" onClick={() => turn(1)} disabled={lastOnSpread >= pages} aria-label="Next page" aria-keyshortcuts="J PageDown" />
 
         {/* Print furniture: a running head on the verso, the folio on each
-            outer corner, and a hairline of progress across the foot. */}
+            outer corner, and a hairline of progress across the foot. The recto's
+            head is absent — its corner belongs to the close button. */}
         <p className="book-head book-head-verso" aria-hidden>
           {chapter} · {name.text}
         </p>
-        <p className="book-head book-head-recto" aria-hidden>
-          {range ? (range[0] === range[1] ? range[0] : `${range[0]}–${range[1]}`) : ""}
-        </p>
-        <p className="book-folio book-folio-verso" aria-hidden>
-          {page + 1}
-        </p>
         <p className="book-folio book-folio-recto" aria-hidden>
-          {perSpread > 1 ? lastOnSpread : ""}
+          {lastOnSpread > page + 1 ? `${page + 1}–${lastOnSpread}` : page + 1} / {pages}
         </p>
+
+        <button type="button" className="book-foot-button book-toc-button" onClick={() => goTo(0)} disabled={page === 0} aria-label="Contents" title="Contents">
+          <List aria-hidden />
+        </button>
         <div className="book-progress" aria-hidden>
           <span style={{ transform: `scaleX(${progress})` }} />
         </div>
 
-        <button type="button" className="book-pages-toggle" onClick={toggleBookPages} aria-pressed={bookPages === 2} title={bookPages === 2 ? "Single page" : "Two pages"} aria-label={bookPages === 2 ? "Show one page" : "Show two pages"}>
-          {bookPages === 2 ? <RectangleVertical aria-hidden /> : <Columns2 aria-hidden />}
+        <div className="book-foot-controls">
+          <button type="button" className="book-foot-button" onClick={() => setReadingScale(READING_SCALES[scaleIndex - 1])} disabled={scaleIndex <= 0} aria-label="Smaller text" title="Smaller text">
+            <AArrowDown aria-hidden />
+          </button>
+          <button type="button" className="book-foot-button" onClick={toggleBookPages} aria-pressed={bookPages === 2} title={bookPages === 2 ? "Single page" : "Two pages"} aria-label={bookPages === 2 ? "Show one page" : "Show two pages"}>
+            {bookPages === 2 ? <RectangleVertical aria-hidden /> : <Columns2 aria-hidden />}
+          </button>
+          <button type="button" className="book-foot-button" onClick={() => setReadingScale(READING_SCALES[scaleIndex + 1])} disabled={scaleIndex >= READING_SCALES.length - 1} aria-label="Larger text" title="Larger text">
+            <AArrowUp aria-hidden />
+          </button>
+        </div>
+
+        {/* Last of the sheet's children: it sits on the next-page zone in the
+            corner, and the corner belongs to the way out. */}
+        <button type="button" className="book-close" onClick={() => navigate({ name: "verse", chapter, verse: anchor.current })} aria-label="Close book view">
+          <X aria-hidden />
         </button>
       </div>
 

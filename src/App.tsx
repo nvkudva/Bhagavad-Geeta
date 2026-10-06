@@ -1,4 +1,4 @@
-import { BookOpen, Check, Settings2, X } from "lucide-react";
+import { BookOpen, Check, Moon, Settings2, Sun } from "lucide-react";
 import type React from "react";
 import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ChapterList } from "./components/ChapterList";
@@ -335,7 +335,7 @@ const SettingsScreen: React.FC = () => {
 const BookScreen: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse }) => {
   return (
     <Suspense fallback={<p className="book-loading">Loading chapter…</p>}>
-      <BookView chapter={chapter} verse={verse} />
+      <BookView key={chapter} chapter={chapter} verse={verse} />
     </Suspense>
   );
 };
@@ -360,7 +360,7 @@ const Screen: React.FC<{ route: ReturnType<typeof useRoute>; language: Language 
 
 const AppShell: React.FC = () => {
   const route = useRoute();
-  const { language, toggleTheme } = useSettings();
+  const { language, theme, toggleTheme } = useSettings();
   const wide = useWide();
   useScrollRestoration(route);
 
@@ -513,15 +513,12 @@ const AppShell: React.FC = () => {
 
   if (inBook && route.name === "book") {
     return (
-      <>
-        <main className="app-main" data-reader="true" data-book="true">
-          <Screen route={route} language={language} />
-        </main>
-
-        <button type="button" className="book-close" onClick={() => navigate({ name: "verse", chapter: route.chapter, verse: route.verse })} aria-label="Close book view">
-          <X aria-hidden />
-        </button>
-      </>
+      <main className="app-main" data-reader="true" data-book="true">
+        {/* The book carries its own way out, in the sheet's corner: from 900px the
+            spread is a centred rectangle, and a shell-level control would sit at the
+            window's corner rather than the page's. */}
+        <Screen route={route} language={language} />
+      </main>
     );
   }
 
@@ -535,33 +532,29 @@ const AppShell: React.FC = () => {
         // is labelled with where it goes back to.
         // The book has left through its own return above, so the reader is the
         // only screen with a back item here.
-        back={inReader ? { label: "Home", onClick: () => navigate({ name: "home" }) } : undefined}
-        // The number leads, as it does in the chapter list and the pager: it is
-        // how a reader says where they are, and the name alone does not say it.
-        title={reading ? `${route.chapter}. ${chapterName(route.chapter, language) ?? ""}`.trim() : APP_NAME[language]}
+        title={APP_NAME[language]}
         titleLang={language}
-        // Only Home takes a large title. The reader's masthead was removed on
-        // purpose, so its chapter name stays in the compact bar.
-        largeTitle={reading ? undefined : APP_NAME[language]}
+        // The app name lives in the bar beside the mark, at every width and every
+        // scroll position — there is no second, larger form of it below.
         // The tab bar is gone in the reader, so Settings needs a door: the
         // trailing bar slot, as a round glass control matching the back item.
         // The sidebar's search row became this field; a phone still reaches
         // search through its tab bar, so it is a wide-width item only.
         search={wide ? { query: route.name === "search" ? route.q : "", placeholder: SEARCH_PLACEHOLDER[language], onQueryChange: runSearch } : undefined}
         trailing={
-          inReader ? (
-            <>
-              {/* The way into the book, from the verse the reader is on. */}
-              {wide && (
-                <Link to={{ name: "book", chapter: route.chapter, verse: route.verse }} className="nav-action-button pressable" aria-label="Book view" data-tip="Book view">
-                  <BookOpen size={17} strokeWidth={2.2} aria-hidden />
-                </Link>
-              )}
-              <Link to={{ name: "settings" }} className="nav-action-button pressable" aria-label="Settings">
+          <span className="nav-actions">
+            <Link to={inReader ? { name: "book", chapter: route.chapter, verse: route.verse } : { name: "book", chapter: 1, verse: 1 }} className="nav-action-button pressable" aria-label="Book view" data-tip="Book view">
+              <BookOpen size={17} strokeWidth={2.2} aria-hidden />
+            </Link>
+            <button type="button" onClick={toggleTheme} className="nav-action-button pressable" aria-label={theme === "dark" ? "Light mode" : "Dark mode"} data-tip={theme === "dark" ? "Light mode" : "Dark mode"}>
+              {theme === "dark" ? <Sun size={17} strokeWidth={2.2} aria-hidden /> : <Moon size={17} strokeWidth={2.2} aria-hidden />}
+            </button>
+            {inReader && (
+              <Link to={{ name: "settings" }} className="nav-action-button nav-settings-button pressable" aria-label="Settings">
                 <Settings2 size={17} strokeWidth={2.2} aria-hidden />
               </Link>
-            </>
-          ) : undefined
+            )}
+          </span>
         }
       />
 

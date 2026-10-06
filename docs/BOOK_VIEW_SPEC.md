@@ -291,11 +291,16 @@ Three pieces, all print conventions, all `--ink-3`/`--ink-4`:
 
 - **Verso running head:** `2 · SĀṄKHYA-YOGA` — chapter number and name, `--fs-caption1`,
   `--tr-caps`, top of the left page.
-- **Recto running head:** the verse range on the spread, `47–51`, right-aligned.
+- **Recto:** no running head — the close button holds that corner at every width.
 - **Folios:** bottom **outer** corner of each page, `--fs-caption2`, `--ink-4`; the
   right one also carries the total, `8 / 17`.
 - **Progress:** a 2 px hairline across the foot of the whole spread, track
   `var(--separator)`, fill `var(--accent)`, width `(page + perSpread) / pages`.
+- **Bands, not gutters:** the head and foot bands are each as deep as the tallest
+  thing standing in them — the close button's 44pt target at the top, the page-count
+  control's at the foot — so the measure begins below the furniture and no control
+  ever sits on a line of text. The page-count control is centred in the foot band, in
+  the fold, which is where a printer puts nothing.
 
 ### 4.4 Shared URLs
 
@@ -358,7 +363,9 @@ media query is **not** recognised as one):
 | `--book-gutter` | `var(--sp-16)` | the spine; the widest space on the spread |
 | `--book-margin-out` | `var(--sp-10)` | outer margin |
 | `--book-margin-in` | `var(--sp-12)` | inner margin — wider, as in print |
-| `--book-margin-y` | `var(--sp-10)` | head and foot |
+| `--book-margin-head` | `var(--sp-12)` / `var(--sp-16)` at 900px | head band: running head + the close button's 44pt target |
+| `--book-margin-foot` | `var(--sp-16)` | foot band: folios, progress rule, page-count control |
+| `--book-glass` / `--book-glass-press` | `color-mix(in srgb, white 72%, var(--book-paper))` | the close disc — a lift of the stock, not material |
 | `--book-page-h` | `calc(100dvh - var(--nav-total) - 2 * var(--sp-8))` | fixed, drives the fragmenter |
 | `--book-turn-zone` | `4rem` | click zone width |
 | `--dur-book-turn` | `420ms` | |

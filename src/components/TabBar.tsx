@@ -38,8 +38,6 @@ const railFromStorage = (): boolean => {
    utility rows. */
 const BOOK_TAB = { id: "book", label: "Book View", Icon: BookOpen, to: { name: "book", chapter: 1, verse: 1 } } as const satisfies (typeof TABS)[number];
 
-const TABS_WITH_BOOK = [TABS[0], BOOK_TAB, ...TABS.slice(1)];
-
 /** Search is the nav bar's own field at this width, not a row in the list. */
 const SIDEBAR_TABS = [TABS[0], BOOK_TAB, ...TABS.slice(1).filter((tab) => tab.id !== "search" && tab.id !== "read")];
 
@@ -64,7 +62,7 @@ export const TabBar: React.FC<{ route: Route }> = ({ route }) => {
 
   return (
     <nav className="app-tabbar" aria-label="Primary">
-      {TABS_WITH_BOOK.map(({ id, label, Icon, to }) => {
+      {TABS.map(({ id, label, Icon, to }) => {
         const isActive = active === id;
         return (
           <Link

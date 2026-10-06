@@ -398,8 +398,8 @@
   --glass-border-hover: rgba(255, 255, 255, 0.2);
   /* Darkens rather than lightens: a lightening well over a card that already sits
      on a lit bloom drops the section label under 4.5:1. */
-  --well: rgba(0, 0, 0, 0.42);
-  --well-border: rgba(255, 255, 255, 0.07);
+  --well: rgba(0, 0, 0, 0.26);
+  --well-border: rgba(255, 255, 255, 0.1);
 
   /* Contrast against --paper / --surface-1: 19.8 / 18.4, 7.7 / 7.2,
      5.9 / 5.5, 3.3 / 3.1. ink-4 is icons and disabled chrome only. */
@@ -452,6 +452,7 @@
   --ramp-verse: linear-gradient(168deg, #b8842f, #e6bd62 26%, #fff8e2 46%, #f0cd7a 54%, #a97a2a);
   --ramp-verse-glow: drop-shadow(0 1px 0 #00000073) drop-shadow(0 0 8px #ffecba38);
   --ramp-verse-fallback: #f0cd7a;
+  --verse-shine: linear-gradient(100deg, transparent 40%, #ffffff8c 50%, transparent 60%);
   /* The same leaf in white metal: pewter at both corners, white through the
      middle, on the diagonal. Darkest stop still clears 4.5:1 on the well. */
   --ramp-trans: linear-gradient(135deg, #fff, #b8c2d2 25%, #fff 50%, #b8c2d2 75%, #fff);
@@ -462,8 +463,8 @@
      .saved-item-link rule). Each is a pair: -face is the raking sheen laid over
      the glass, -edge is the hairline, lit at the top-left and shadowed at the
      bottom-right. Only the colours differ; the mechanics live in one place. */
-  --metal-oxblood-face: linear-gradient(152deg, rgba(96, 20, 42, 0.5), rgba(30, 14, 20, 0.44) 36%, rgba(150, 44, 76, 0.26) 52%, rgba(24, 12, 17, 0.46) 72%, rgba(74, 16, 34, 0.48));
-  --metal-oxblood-edge: linear-gradient(152deg, rgba(236, 138, 162, 0.42), rgba(150, 44, 76, 0.14) 44%, rgba(0, 0, 0, 0.32));
+  --metal-oxblood-face: linear-gradient(152deg, rgba(96, 20, 42, 0.5), rgba(30, 14, 20, 0.44) 36%, rgba(150, 44, 76, 0.26) 52%, rgba(56, 22, 34, 0.42) 72%, rgba(118, 34, 60, 0.5));
+  --metal-oxblood-edge: linear-gradient(152deg, rgba(236, 138, 162, 0.42), rgba(150, 44, 76, 0.14) 44%, rgba(150, 44, 76, 0.3));
   --metal-brass-face: linear-gradient(152deg, rgba(78, 56, 22, 0.55), rgba(30, 22, 12, 0.42) 34%, rgba(120, 92, 40, 0.3) 52%, rgba(24, 18, 10, 0.44) 70%, rgba(62, 45, 18, 0.5));
   --metal-brass-edge: linear-gradient(152deg, rgba(240, 205, 122, 0.55), rgba(184, 132, 47, 0.16) 42%, rgba(0, 0, 0, 0.3));
   /* Lighter than the preview: a saved row is a small tile in a list, and the
@@ -489,16 +490,16 @@
      floating pager and its insets, less the gutter above and below the card.
      One token so the track, the card and the shell's padding cannot drift. */
   --reader-h: calc(100dvh - var(--nav-total) - var(--pager-h) - var(--float-gap) - var(--sa-bottom) - 2 * var(--gutter));
-  --large-title-h: 52px;
   --tabbar-h: 56px;
   /* Floating chrome hovers this far off the bottom edge, above the inset. */
   --float-gap: var(--sp-2);
-  /* Real height of the sticky nav, for scroll-margin-top on verse anchors. */
-  --nav-total: calc(var(--nav-h) + var(--sa-top) + 2 * var(--sp-1));
+  /* Real height of the sticky nav — the control row plus its air — for
+     scroll-margin-top on verse anchors and every one-screenful calculation. */
+  --nav-total: calc(var(--nav-h) + var(--sa-top) + var(--sp-1));
 
-  /* Half the empty search screen: the viewport less the nav with its large
-     title, the floating tab bar it must clear, and the field's own height. */
-  --search-rise: max(0px, calc((100dvh - var(--nav-total) - var(--large-title-h) - var(--tabbar-h) - var(--float-gap) - var(--sa-bottom) - var(--sp-6) - var(--sp-4) - var(--tap-comfortable)) / 2));
+  /* Half the empty search screen: the viewport less the nav, the floating tab
+     bar it must clear, and the field's own height. */
+  --search-rise: max(0px, calc((100dvh - var(--nav-total) - var(--tabbar-h) - var(--float-gap) - var(--sa-bottom) - var(--sp-6) - var(--sp-4) - var(--tap-comfortable)) / 2));
   --sidebar-w: 17rem;
 
   /* Each swatch previews a palette other than the active one, so these cannot
@@ -888,15 +889,15 @@ body::before {
    no material, no hairline, no specular — and the content runs under a bare
    status bar. Header writes --nav-progress (0 -> 1 over the first 52px) every
    frame, so the material arrives *with* the finger instead of snapping at a
-   threshold, and one variable drives the whole condense. */
+   threshold. */
 .app-nav {
   position: sticky;
   top: 0;
   z-index: 100;
-  /* The 44pt control row plus 4pt of air on each side of it, so a round glass
-     control ends 8pt clear of the bar's own hairline instead of touching it. */
+  /* 4pt of air above the 44pt control row and none below: the content's own
+     top padding matches the side gutter. */
   padding-top: calc(var(--sa-top) + var(--sp-1));
-  padding-bottom: var(--sp-1);
+  padding-bottom: 0;
   padding-left: max(var(--gutter), var(--sa-left));
   padding-right: max(var(--gutter), var(--sa-right));
 }
@@ -919,7 +920,7 @@ body::before {
   pointer-events: none;
 }
 
-/* The 44pt control row. The large title, when present, is a second row below. */
+/* The 44pt control row, and the whole bar: the title is in it, not below it. */
 .app-nav-bar {
   position: relative;
   min-height: var(--nav-h);
@@ -935,25 +936,20 @@ body::before {
   margin-left: auto;
 }
 
-/* Large title — 34px, collapsing into the compact bar as the reader scrolls.
-   Height and opacity are animated together on a spring so it reads as the
-   title being *pulled up* into the bar rather than two crossfading labels. */
-.nav-large-title {
-  font-family: var(--font-read);
-  font-size: var(--fs-large);
-  font-weight: var(--fw-bold);
-  letter-spacing: var(--tr-large);
-  line-height: var(--lh-tight);
-  color: var(--ink-1);
-  white-space: nowrap;
-  overflow: hidden;
-  /* Above the material layer, and driven straight off the scroll: the title
-     shrinks into the bar continuously rather than crossfading on a spring. */
-  position: relative;
-  height: calc(var(--large-title-h) * (1 - var(--nav-progress, 0)));
-  opacity: calc(1 - var(--nav-progress, 0) * 1.6);
-  transform: scale(calc(1 - 0.38 * var(--nav-progress, 0))) translateY(calc(6px * var(--nav-progress, 0)));
-  transform-origin: left bottom;
+.nav-title-button {
+  flex: 0 1 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.nav-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--sp-2);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -1267,10 +1263,9 @@ input:focus-visible {
   font-size: var(--fs-subhead);
 }
 
-/* The compact title is the collapsed form of the large one, so it exists at
-   every width. It sits flush with the leading edge — the same line the large
-   title, the logo and the content column all start on — and takes the free
-   space so anything trailing it is pushed to the far edge. */
+/* The bar's title. It sits flush with the leading edge — the same line the
+   logo, the back chevron and the content column all start on — and takes the
+   free space so anything trailing it is pushed to the far edge. */
 .nav-title-compact {
   flex: 1 1 auto;
   min-width: 0;
@@ -1278,12 +1273,6 @@ input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  pointer-events: none;
-}
-
-/* With a large title below it, the compact one only arrives as that leaves. */
-.app-nav[data-large="true"] .nav-title-compact {
-  opacity: calc(var(--nav-progress, 0) * 2 - 1);
 }
 
 .settings-screen {
@@ -1928,11 +1917,10 @@ input:focus-visible {
    clipping it. At the default text size nothing here overflows; the verse that
    does it is a long one read large. */
 .verse-text-wrapper,
-.verse-transliteration-wrapper,
 .verse-section-card {
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
   scrollbar-width: thin;
 }
 
@@ -1975,10 +1963,31 @@ input:focus-visible {
   margin-bottom: var(--sp-2);
 }
 
+@keyframes verse-shine {
+  from {
+    background-position: 100% 0, 0 0;
+  }
+  to {
+    background-position: 0% 0, 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verse-text {
+    animation: none;
+    background-position: -200% 0, 0 0;
+  }
+}
+
 /* The reason the app exists: highest contrast, no accent, regular weight —
    Devanagari at semibold muddies conjuncts (DESIGN_PLAN §4.3). */
 .verse-text {
-  background-image: var(--ramp-verse);
+  /* A soft light band sweeps left to right over the static ramp; only the
+     band's layer moves. */
+  background-image: var(--verse-shine), var(--ramp-verse);
+  background-size: 250% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  animation: verse-shine 6s ease-in-out infinite;
   -webkit-background-clip: text;
   background-clip: text;
   /* drop-shadow, not text-shadow: a text-shadow paints behind a transparent
@@ -1996,7 +2005,10 @@ input:focus-visible {
   text-wrap: balance;
 }
 
+/* Always shown whole: the other bands give up the height it needs. */
 .verse-transliteration-wrapper {
+  flex: 0 0 auto;
+  overflow: visible;
   text-align: center;
   margin-bottom: var(--gap-section);
 }
@@ -2049,7 +2061,7 @@ input:focus-visible {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
   scrollbar-width: thin;
 }
 
@@ -2070,7 +2082,7 @@ input:focus-visible {
   grid-area: 1 / 1;
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
   scrollbar-width: thin;
 }
 
@@ -2111,7 +2123,8 @@ input:focus-visible {
   font-size: var(--fs-trans);
   line-height: var(--lh-read);
   color: transparent;
-  text-align: left;
+  text-align: justify;
+  hyphens: auto;
 }
 
 /* The commentary and the word glosses are reference prose, not the verse: they

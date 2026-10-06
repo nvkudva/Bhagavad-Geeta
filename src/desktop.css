@@ -145,16 +145,6 @@
     padding-top: var(--sp-6);
   }
 
-  /* A fixed-height bar, so the large title collapse — a phone gesture — gives
-     way to the compact title, which is simply always there. */
-  .nav-large-title {
-    display: none;
-  }
-
-  .app-nav[data-large="true"] .nav-title-compact {
-    opacity: 1;
-  }
-
   /* Half the bar, less half the field and a gutter: the title ellipsises
      rather than sliding under the centred field. */
   .nav-title-compact {
@@ -169,13 +159,8 @@
   /* The sidebar carries Settings at this width, so the reader's trailing pill
      would be a second door to the same room — and Read in that same sidebar is
      the way back, so the leading chevron goes with it. */
-  .nav-action-button,
+  .nav-settings-button,
   .nav-back-button {
-    display: none;
-  }
-
-  /* One mark per window: the sidebar's masthead carries it. */
-  .nav-logo-button {
     display: none;
   }
 

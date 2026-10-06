@@ -3,6 +3,7 @@ import type React from "react";
 import { useEffect, useReducer, useState } from "react";
 import { getChapters, loadChapter, peekChapter } from "../lib/gita";
 import type { Language, Verse } from "../lib/gita.types";
+import { readableScripture } from "../lib/scripture";
 import { Link } from "../lib/router";
 
 const chapters = getChapters();
@@ -77,7 +78,7 @@ export const VerseOfMoment: React.FC<{ language: Language }> = ({ language }) =>
       </div>
 
       <p className="verse-of-moment-text" lang={scripture.lang}>
-        {scripture.text.replace(/\n\s*\n/g, "\n").trim()}
+        {readableScripture(scripture.text)}
       </p>
 
       <p className="verse-of-moment-translation" lang={translation.lang}>
