@@ -1153,12 +1153,13 @@ input:focus-visible {
 /* Noto Kannada and Telugu reserve a deep descent below the letters, so their
    ink sits high in the line box: measured against Literata's letter bodies,
    0.25em high for Kannada and 0.16em for Telugu, whatever the line-height.
-   Nudged down by that much so the title centres on the logo as English does. */
+   Nudged down by that much, less 3px found by eye on device, so the title
+   centres on the logo as English does. */
 .nav-title[lang="kn"] {
-  transform: translateY(0.25em);
+  transform: translateY(calc(0.25em - 3px));
 }
 .nav-title[lang="te"] {
-  transform: translateY(0.16em);
+  transform: translateY(calc(0.16em - 3px));
 }
 
 .nav-logo-button {
