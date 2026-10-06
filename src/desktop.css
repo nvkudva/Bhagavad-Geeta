@@ -53,6 +53,15 @@
     --measure: 46rem;
   }
 
+  /* Kannada and Telugu: the same 2px step down as index.css, at this tier. */
+  :root[data-lang="kn"],
+  :root[data-lang="te"] {
+    --fs-verse: calc((1.8125rem - 2px) * var(--reading-scale));
+    --fs-trans: calc((1.25rem - 2px) * var(--reading-scale));
+    --fs-comment: calc((1.125rem - 2px) * var(--reading-scale));
+    --fs-gloss: calc((0.9375rem - 2px) * var(--reading-scale));
+  }
+
   /* Capped only here. A list screen and a grid screen share --w-content so
      they line up column-for-column when you switch tabs; the reader and the
      single-column screens share the narrower --measure. */
@@ -1032,6 +1041,11 @@
     --fs-verse: calc(2.125rem * var(--reading-scale));
     --lh-indic: 1.52;
     --lh-verse: 1.48;
+  }
+
+  :root[data-lang="kn"],
+  :root[data-lang="te"] {
+    --fs-verse: calc((2.125rem - 2px) * var(--reading-scale));
   }
 
   .chapter-grid {

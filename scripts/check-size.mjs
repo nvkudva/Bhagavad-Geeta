@@ -64,7 +64,9 @@ const KB = 1024;
 // Raised from 82 KB by Book View. The screen itself is in the lazy row; what
 // lands on the first paint is only its wiring — the book route in the router,
 // the page keys, the sidebar entry and the shell's lazy boundary.
-const BUDGETS = { js: 84 * KB, lazyJs: 12 * KB, css: 12 * KB, desktopCss: 7 * KB };
+// Raised from 84 KB by the Settings text-size row, which brings the reading
+// size the sidebar already steps through to a phone, where there is no sidebar.
+const BUDGETS = { js: 85 * KB, lazyJs: 12 * KB, css: 12 * KB, desktopCss: 7 * KB };
 
 /* What index.html loads on a first paint, walked transitively through the
    manifest's static imports. A chunk reached only through import() — Book View,

@@ -21,7 +21,7 @@ import { applyUpdate, checkForUpdate, hardReload } from "./lib/sw";
 import type { Route } from "./lib/router";
 import { Link, navigate, useRoute, useScrollRestoration } from "./lib/router";
 import type { FontKey, PaletteKey, SectionKey } from "./lib/settings";
-import { FONT_KEYS, LANGUAGE_LABELS, LANGUAGES, PALETTE_KEYS, PALETTE_LABELS, SECTION_KEYS, SettingsProvider, useSettings } from "./lib/settings";
+import { FONT_KEYS, LANGUAGE_LABELS, LANGUAGES, PALETTE_KEYS, PALETTE_LABELS, READING_SCALES, SECTION_KEYS, SettingsProvider, useSettings } from "./lib/settings";
 
 /* Desktop-only and never on the first-paint path: the book's own chunk is
    fetched when a reader asks for it. */
@@ -206,6 +206,36 @@ const PaletteRow: React.FC<{ palette: PaletteKey; setPalette: (key: PaletteKey) 
   </div>
 );
 
+/* The reading-size scale the sidebar steps through, reachable on a phone too:
+   a small A and a large A either side of the current size, the way Books
+   offers it. Changes every reading size at once, in every language. */
+const TextSizeRow: React.FC = () => {
+  const { readingScale, setReadingScale } = useSettings();
+  const index = READING_SCALES.indexOf(readingScale);
+  const step = (delta: number): void => setReadingScale(READING_SCALES[Math.min(READING_SCALES.length - 1, Math.max(0, index + delta))]);
+
+  return (
+    <div className="settings-row">
+      <span className="settings-row-label">Text size</span>
+      <span className="text-size-stepper">
+        <button type="button" className="text-size-step pressable" aria-label="Smaller text" disabled={index <= 0} onClick={() => step(-1)}>
+          <span className="text-size-a-small" aria-hidden>
+            A
+          </span>
+        </button>
+        <span className="text-size-value" aria-live="polite">
+          {Math.round(readingScale * 100)}%
+        </span>
+        <button type="button" className="text-size-step pressable" aria-label="Larger text" disabled={index >= READING_SCALES.length - 1} onClick={() => step(1)}>
+          <span className="text-size-a-large" aria-hidden>
+            A
+          </span>
+        </button>
+      </span>
+    </div>
+  );
+};
+
 const SETTINGS_SECTIONS: readonly { id: string; label: string }[] = [
   { id: "language", label: "Language" },
   { id: "appearance", label: "Appearance" },
@@ -296,6 +326,7 @@ const SettingsScreen: React.FC = () => {
           {/* Two mutually exclusive rows for a binary is a radio group doing a
             switch's job; one switch says the same thing in half the height. */}
           <SettingsSwitch on={theme === "dark"} onToggle={toggleTheme} label="Dark mode" />
+          <TextSizeRow />
           <PaletteRow palette={palette} setPalette={setPalette} />
         </SettingsSection>
 

@@ -238,6 +238,18 @@
   --font-telu: "Noto Sans Telugu", "Telugu Sangam MN", "Nirmala UI", sans-serif;
 }
 
+/* Kannada and Telugu set larger than Latin at the same size, so the reading
+   text steps down 2px in those languages. Root-scoped and qualified, so it
+   outranks every :root tier; desktop.css and book.css restate it per tier.
+   The Latin transliteration and the UI chrome keep their sizes. */
+:root[data-lang="kn"],
+:root[data-lang="te"] {
+  --fs-verse: calc((1.3125rem - 2px) * var(--reading-scale));
+  --fs-trans: calc((1rem - 2px) * var(--reading-scale));
+  --fs-comment: calc((0.875rem - 2px) * var(--reading-scale));
+  --fs-gloss: calc((0.8125rem - 2px) * var(--reading-scale));
+}
+
 [data-font="source"] {
   --font-read: "Source Serif 4", Georgia, "Times New Roman", serif;
 }
@@ -506,7 +518,6 @@
      resolve through the palette tokens — all four grounds have to be readable
      at once, whichever palette is on. */
   --swatch-parijata: linear-gradient(145deg, #d61a4a, #0b0709);
-  --swatch-kumkum: linear-gradient(145deg, #db1e3a, #0a0406);
   --swatch-saffron: linear-gradient(145deg, #e27410, #090603);
   --swatch-nila: linear-gradient(145deg, #3042ba, #04060d);
 }
@@ -586,11 +597,17 @@
   --glow-brass: 0 10px 34px -16px rgba(120, 88, 22, 0.2), 0 0 52px -28px rgba(168, 122, 30, 0.14);
   --glow-brass-hover: 0 14px 42px -14px rgba(120, 88, 22, 0.28), 0 0 68px -24px rgba(168, 122, 30, 0.2);
 
-  /* The dark ramps are tuned for near-black and go invisible here. Same leaf,
-     inverted: the specular band is the *darkest* stop on a light ground, and
-     the halo is a soft dark lift rather than a bloom. */
-  --ramp-verse: linear-gradient(168deg, #7a5415, #5c3f0f 26%, #3a2706 46%, #63450f 54%, #6b4a12);
-  --ramp-verse-glow: drop-shadow(0 1px 0 #ffffff80);
+  /* The same gilded leaf and glow as the dark appearance, struck in antique
+     gold: the dark ramp's pale stops measure 1.1–1.8:1 on a light card. Every
+     stop here clears 4.5:1 on the card (darkest 8.9, brightest 4.6), and the
+     shape — deep ends, brighter band through the middle — is kept. */
+  --ramp-verse: linear-gradient(168deg, #6b450a, #8a5c10 26%, #946414 46%, #7a5110 54%, #5e3c08);
+  /* The dark appearance's crisp 1px black drop doubles a dark glyph's edge
+     on a light card. Here it is a faint, wide, warm lift instead. */
+  --ramp-verse-glow: drop-shadow(0 1px 3px rgba(94, 60, 8, 0.16));
+  /* A warm, faint band rather than white: white at 55% would wash the
+     brightest stop to 1.6:1 as it passes. This one dips it to about 3:1. */
+  --verse-shine: linear-gradient(100deg, transparent 40%, rgba(255, 233, 176, 0.24) 50%, transparent 60%);
   --ramp-verse-fallback: #6b4a12;
   --ramp-trans: linear-gradient(135deg, #1b2028, #4a5262 25%, #1b2028 50%, #4a5262 75%, #1b2028);
   --ramp-trans-glow: drop-shadow(0 1px 0 #ffffff73);
@@ -605,7 +622,6 @@
   --metal-brass-edge: linear-gradient(152deg, rgba(255, 255, 255, 0.95), rgba(168, 122, 30, 0.2) 42%, rgba(38, 16, 54, 0.14));
 
   --swatch-parijata: linear-gradient(145deg, #e278c4, #f3ebf9);
-  --swatch-kumkum: linear-gradient(145deg, #f07860, #fbeee9);
   --swatch-saffron: linear-gradient(145deg, #f8b042, #fdf3e3);
   --swatch-nila: linear-gradient(145deg, #7892ee, #ecf0fc);
 }
@@ -614,32 +630,7 @@
      overrides only what carries colour: the paper, the four bloom slots, and
      the accent triple. Everything else — inks, glass, materials, metals — is
      hue-neutral and inherited from the appearance above. No attribute is the
-     maroon default, so a reader who never opens the picker pays nothing. --- */
-
-:root[data-palette="kumkum"] {
-  --paper: #0a0406;
-  --bloom-1: rgba(219, 30, 58, 0.7);
-  --bloom-2: rgba(166, 14, 40, 0.56);
-  --bloom-3: rgba(92, 8, 24, 0.62);
-  --accent: #f4756a;
-  --accent-soft: rgba(244, 117, 106, 0.16);
-  --accent-line: rgba(244, 117, 106, 0.35);
-}
-
-[data-theme="light"][data-palette="kumkum"] {
-  --paper: #fbeee9;
-  --bloom-1: rgba(240, 120, 96, 0.72);
-  --bloom-2: rgba(214, 58, 74, 0.5);
-  --bloom-3: rgba(246, 168, 120, 0.52);
-  --bloom-4: rgba(253, 240, 232, 0.95);
-  /* 5.6:1 on --paper. */
-  --accent: #b12f26;
-  --accent-soft: rgba(177, 47, 38, 0.07);
-  --accent-line: rgba(177, 47, 38, 0.28);
-  --well: rgba(56, 18, 14, 0.085);
-  --well-border: rgba(56, 18, 14, 0.07);
-  --glass-border-hover: rgba(177, 47, 38, 0.22);
-}
+     kumkum default, so a reader who never opens the picker pays nothing. --- */
 
 :root[data-palette="saffron"] {
   --paper: #090603;
@@ -1465,10 +1456,6 @@ input:focus-visible {
   background: var(--swatch-parijata);
 }
 
-.palette-swatch[data-palette-swatch="kumkum"] {
-  background: var(--swatch-kumkum);
-}
-
 .palette-swatch[data-palette-swatch="saffron"] {
   background: var(--swatch-saffron);
 }
@@ -1534,6 +1521,52 @@ input:focus-visible {
 
 .settings-switch[data-on="true"] .settings-switch-knob {
   transform: translateX(20px);
+}
+
+/* Text size: two round steppers around the current percentage. Each button is
+   a full 44pt target; the glyph inside is the specimen of what it does. */
+.text-size-stepper {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.text-size-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.text-size-step:disabled {
+  color: var(--ink-4);
+  cursor: default;
+}
+
+.text-size-a-small {
+  font-size: var(--fs-footnote);
+}
+
+.text-size-a-large {
+  font-size: var(--fs-title3);
+}
+
+.text-size-value {
+  min-width: 3.5ch;
+  color: var(--ink-3);
+  font-size: var(--fs-subhead);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1706,7 +1739,6 @@ input:focus-visible {
 }
 
 .verse-of-moment-text {
-  background-image: var(--ramp-verse);
   -webkit-background-clip: text;
   background-clip: text;
   filter: var(--ramp-verse-glow);
@@ -1972,8 +2004,22 @@ input:focus-visible {
   }
 }
 
+/* Every gilded sloka — the reader, the home card and the saved list — carries
+   the same sweep: a soft light band crossing the static ramp. Only the band's
+   layer moves. */
+.verse-text,
+.verse-of-moment-text,
+.saved-item-text {
+  background-image: var(--verse-shine), var(--ramp-verse);
+  background-size: 250% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  animation: verse-shine 6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .verse-text {
+  .verse-text,
+  .verse-of-moment-text,
+  .saved-item-text {
     animation: none;
     background-position: -200% 0, 0 0;
   }
@@ -1982,12 +2028,6 @@ input:focus-visible {
 /* The reason the app exists: highest contrast, no accent, regular weight —
    Devanagari at semibold muddies conjuncts (DESIGN_PLAN §4.3). */
 .verse-text {
-  /* A soft light band sweeps left to right over the static ramp; only the
-     band's layer moves. */
-  background-image: var(--verse-shine), var(--ramp-verse);
-  background-size: 250% 100%, 100% 100%;
-  background-repeat: no-repeat;
-  animation: verse-shine 6s ease-in-out infinite;
   -webkit-background-clip: text;
   background-clip: text;
   /* drop-shadow, not text-shadow: a text-shadow paints behind a transparent
@@ -2780,7 +2820,6 @@ input:focus-visible {
 }
 
 .saved-item-text {
-  background-image: var(--ramp-verse);
   -webkit-background-clip: text;
   background-clip: text;
   filter: var(--ramp-verse-glow);

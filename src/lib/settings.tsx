@@ -14,13 +14,13 @@ type Theme = "light" | "dark";
  *  index.css override font-family for those scripts whatever this says. */
 export type FontKey = "literata" | "source" | "newsreader" | "faustina" | "system";
 
-/** The ground's hue. "maroon" is the built-in and carries no attribute; the
+/** The ground's hue. "kumkum" is the built-in and carries no attribute; the
  *  rest are the [data-palette] blocks in index.css, each with a light half. */
-export type PaletteKey = "maroon" | "kumkum" | "saffron" | "nila";
+export type PaletteKey = "kumkum" | "saffron" | "nila";
 
-export const PALETTE_KEYS: readonly PaletteKey[] = ["maroon", "kumkum", "saffron", "nila"];
+export const PALETTE_KEYS: readonly PaletteKey[] = ["kumkum", "saffron", "nila"];
 
-export const PALETTE_LABELS: Record<PaletteKey, string> = { maroon: "Maroon", kumkum: "Kumkum", saffron: "Saffron", nila: "Nila" };
+export const PALETTE_LABELS: Record<PaletteKey, string> = { kumkum: "Kumkum", saffron: "Saffron", nila: "Nila" };
 
 export const FONT_KEYS: readonly FontKey[] = ["literata", "source", "newsreader", "faustina", "system"];
 
@@ -57,11 +57,11 @@ const paintThemeColor = (theme: Theme): void => {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLOR[theme]);
 };
 
-// Applied pre-paint alongside the theme; "maroon" is the default and carries
+// Applied pre-paint alongside the theme; "kumkum" is the default and carries
 // no attribute.
 const readPalette = (): PaletteKey => {
   const saved = document.documentElement.dataset.palette;
-  return PALETTE_KEYS.includes(saved as PaletteKey) ? (saved as PaletteKey) : "maroon";
+  return PALETTE_KEYS.includes(saved as PaletteKey) ? (saved as PaletteKey) : "kumkum";
 };
 
 // The pre-paint script in index.html has already applied the face, the same way
@@ -119,6 +119,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     document.documentElement.style.setProperty("--reading-scale", String(readingScale));
   }, [readingScale]);
 
+  // Drives the per-language reading sizes in the stylesheets. The pre-paint
+  // script in index.html sets it first, so this only follows later changes.
+  useEffect(() => {
+    document.documentElement.dataset.lang = language;
+  }, [language]);
+
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === "light" ? "dark" : "light";
@@ -149,7 +155,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const setPalette = useCallback((key: PaletteKey) => {
     setPaletteState(key);
-    if (key === "maroon") delete document.documentElement.dataset.palette;
+    if (key === "kumkum") delete document.documentElement.dataset.palette;
     else document.documentElement.dataset.palette = key;
     localStorage.setItem("gita-palette", key);
   }, []);

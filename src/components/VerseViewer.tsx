@@ -65,7 +65,8 @@ const COMMENTARY_TRANSLATED = "AI translated";
    stack deliberately carries no Indic fallback, because one there would pull
    both faces on every screen for the sake of the language <select>. */
 const COMMENTARY_LABEL: Record<Language, string> = { en: "Commentary", kn: "\u0cad\u0cbe\u0cb7\u0ccd\u0caf", te: "\u0c2d\u0c3e\u0c37\u0c4d\u0c2f\u0c02" };
-const WORD_MEANINGS_LABEL = "Word meanings";
+const WORD_MEANINGS_LABEL: Record<Language, string> = { en: "Word meanings", kn: "\u0c85\u0cb0\u0ccd\u0ca5", te: "\u0c05\u0c30\u0c4d\u0c25\u0c02" };
+const VERSE_LABEL: Record<Language, string> = { en: "Verse", kn: "\u0cb6\u0ccd\u0cb2\u0ccb\u0c95", te: "\u0c36\u0c4d\u0c32\u0c4b\u0c15\u0c02" };
 const SECTION_LANG: Record<Language, string> = { en: "en", kn: "kn", te: "te" };
 
 const verseDomId = (chapter: number, verse: number): string => `c${chapter}v${verse}`;
@@ -168,7 +169,7 @@ const VerseBlock = memo<{ chapter: number; verse: Verse; language: Language; sec
       <div className="verse-block">
       <div className="verse-viewer-title-wrapper">
         <h2 className="verse-viewer-title">
-          Verse {chapter}.{verse.verse_number}
+          <span lang={SECTION_LANG[language]}>{VERSE_LABEL[language]}</span> {chapter}.{verse.verse_number}
         </h2>
         <SaveButton chapter={chapter} verse={verse.verse_number} />
       </div>
@@ -228,8 +229,8 @@ const VerseBlock = memo<{ chapter: number; verse: Verse; language: Language; sec
                 </button>
               )}
               {glossList && (
-                <button type="button" role="tab" aria-selected={tab === "words"} className="verse-tab" onClick={() => setTab("words")} lang="en">
-                  {WORD_MEANINGS_LABEL}
+                <button type="button" role="tab" aria-selected={tab === "words"} className="verse-tab" onClick={() => setTab("words")} lang={SECTION_LANG[language]}>
+                  {WORD_MEANINGS_LABEL[language]}
                 </button>
               )}
             </div>
@@ -262,8 +263,8 @@ const VerseBlock = memo<{ chapter: number; verse: Verse; language: Language; sec
           pushed the next verse a screenful down. */}
       {panes && glossList && (
         <aside className="verse-glosses-aside" aria-label={`Word meanings for verse ${verse.verse_number}`}>
-          <h3 className="verse-pane-label" lang="en">
-            {WORD_MEANINGS_LABEL}
+          <h3 className="verse-pane-label" lang={SECTION_LANG[language]}>
+            {WORD_MEANINGS_LABEL[language]}
           </h3>
           {glossList}
         </aside>
