@@ -10,6 +10,10 @@
          the OS says, so a light OS must not paint white chrome around a dark app.
          The pre-paint script below and SettingsProvider rewrite it on an explicit choice. -->
     <meta name="theme-color" content="#0A0A0B" />
+    <!-- Declares that the app draws its own dark and light grounds, so Samsung Internet's
+         and Chrome's "dark mode for websites" leaves it alone instead of re-inverting it.
+         Static on purpose: the CSS color-scheme on :root follows the chosen theme. -->
+    <meta name="color-scheme" content="dark light" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
