@@ -6,7 +6,7 @@ An offline-capable web reader for all 701 verses of the Bhagavad Gita, for peopl
 
 The whole corpus is generated into static JSON at build time, so the reader works from the service-worker cache with no backend.
 
-[Product page](https://nvkudva.github.io/bhagavad-geeta/) · [Docs](docs/)
+[Product page](https://nvkudva.github.io/Bhagavad-Geeta/) · [Docs](docs/)
 
 ![The desktop reader showing a verse column with word meanings alongside](public/screenshots/wide.jpg)
 
