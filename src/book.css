@@ -60,15 +60,6 @@
   --book-lh-small: calc(18px * var(--reading-scale));
 }
 
-/* Kannada and Telugu: the same 2px step down as the card reader. */
-:root[data-lang="kn"],
-:root[data-lang="te"] {
-  --book-fs-verse: calc((1.25rem - 2px) * var(--reading-scale));
-  --book-fs-trans: calc((0.9375rem - 2px) * var(--reading-scale));
-  --book-fs-comment: calc((0.8125rem - 2px) * var(--reading-scale));
-  --book-fs-gloss: calc((0.75rem - 2px) * var(--reading-scale));
-}
-
 /* A rule at the foot, not a meter: the page height is quantised to the
    baseline so the column feet land on it. */
 @supports (height: round(down, 100px, 6px)) {
@@ -93,11 +84,6 @@
     --book-pad: var(--sp-6);
     --book-turn-zone: 4rem;
     --book-fs-verse: calc(1.375rem * var(--reading-scale));
-  }
-
-  :root[data-lang="kn"],
-  :root[data-lang="te"] {
-    --book-fs-verse: calc((1.375rem - 2px) * var(--reading-scale));
   }
 }
 

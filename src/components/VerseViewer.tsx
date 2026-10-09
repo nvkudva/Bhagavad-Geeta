@@ -1,11 +1,11 @@
-import { Bookmark, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { Bookmark, ChevronLeft, ChevronRight, List } from "lucide-react";
 import type React from "react";
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toggleBookmark, useIsSaved } from "../lib/bookmarks";
 import { useWide, useWidePlus } from "../lib/media";
-import { VerseIndexSheet } from "./VerseIndexSheet";
+import { VerseList } from "./VerseList";
 import type { Verse } from "../lib/gita.types";
-import { syncVerseUrl } from "../lib/router";
+import { Link, syncVerseUrl } from "../lib/router";
 import { readableScripture } from "../lib/scripture";
 import type { Language } from "../lib/gita.types";
 import type { Sections } from "../lib/settings";
@@ -17,8 +17,6 @@ interface VerseViewerProps {
   /** The verse the URL points at: "render chapter n, paged to verse m". */
   targetVerse: number;
   language: Language;
-  /** The chapter's name in the reader's language, for the rail header. */
-  chapterName?: string;
   onGoToVerse: (verse: number) => void;
   onPrevChapter: () => void;
   onNextChapter: () => void;
@@ -280,14 +278,12 @@ VerseBlock.displayName = "VerseBlock";
  *  and the snap itself all run off the main thread — and prev/next is the same
  *  motion driven by scrollTo. Only WINDOW*2+1 slides are ever mounted; two flex
  *  spacers stand in for the rest so the scroll extent still spans the chapter. */
-export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targetVerse, language, chapterName, onGoToVerse, onPrevChapter, onNextChapter, hasPrevChapter, hasNextChapter }) => {
+export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targetVerse, language, onGoToVerse, onPrevChapter, onNextChapter, hasPrevChapter, hasNextChapter }) => {
   const { sections } = useSettings();
   const wide = useWide();
   const widePlus = useWidePlus();
   const trackRef = useRef<HTMLDivElement | null>(null);
   const columnRef = useRef<HTMLDivElement | null>(null);
-  const railRef = useRef<HTMLElement | null>(null);
-  const gridRef = useRef<HTMLDivElement | null>(null);
   /** The verse currently under the snap point. Mirrors `active` without the
    *  render lag, so the scroll listener can tell a settled page from a new one. */
   const activeRef = useRef<number | null>(null);
@@ -302,9 +298,6 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
    *  scroll-spy below never bumps it, so following the reader's own scroll
    *  cannot fight the reader. */
   const [targetNonce, setTargetNonce] = useState(0);
-  /** The phone's verse index. Raised from the pager label, which is the only
-   *  control on the screen that already names a verse. */
-  const [indexOpen, setIndexOpen] = useState(false);
   if (seenTarget !== targetVerse) {
     setSeenTarget(targetVerse);
     setActive(targetVerse);
@@ -428,29 +421,6 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
     }
   }, [wide, chapter, count, targetVerse, targetNonce]);
 
-  // The rail never scrolls, and nothing scrolls it: the whole chapter fits the
-  // sticky box as a grid of numbers. Following the active row — however gently
-  // — moved the index out from under the cursor on every click and on every
-  // reading scroll, and an index taller than its box moves anyway the moment
-  // the wheel passes over it.
-
-  /* The active-verse thumb is placed from the row's measured offsets rather
-     than from cell arithmetic, so it stays exact whatever the grid resolves the
-     cell width to, and it can transition between two positions instead of the
-     ground teleporting from cell to cell. */
-  /* The rail never follows the reading position — that pulled cards out from
-     under the cursor on every click. It does bring the active card into view
-     once per chapter, so a deep link into chapter 18 does not open with its
-     own card scrolled out of sight. */
-  const placedRef = useRef<number | null>(null);
-  useLayoutEffect(() => {
-    const grid = gridRef.current;
-    const card = grid?.querySelector<HTMLElement>('[aria-current="true"]');
-    if (!grid || !card || placedRef.current === chapter) return;
-    placedRef.current = chapter;
-    grid.scrollTop = card.offsetTop - grid.clientHeight / 2 + card.offsetHeight / 2;
-  }, [active, count, chapter, widePlus]);
-
   // Column -> route. The band is the middle of the viewport: a verse owns the
   // URL while its top third is in the reading position.
   useLayoutEffect(() => {
@@ -503,48 +473,8 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
     return (
       <div className="verse-viewer-container">
         {widePlus && count > 0 && (
-          <nav className="verse-rail" aria-label={`Verses in chapter ${chapter}`} ref={railRef}>
-            <div className="verse-rail-head">
-              <button
-                type="button"
-                className="verse-rail-step pressable"
-                onClick={() => railStep(onPrevChapter, "prev")}
-                disabled={!hasPrevChapter}
-                data-tip={`Chapter ${chapter - 1}`}
-                aria-label={`Chapter ${chapter - 1}`}>
-                <ChevronLeft size={14} strokeWidth={2.4} aria-hidden />
-              </button>
-              <span className="verse-rail-head-text">
-                <span className="verse-rail-eyebrow">Chapter {chapter}</span>
-                {chapterName && <span className="verse-rail-name">{chapterName}</span>}
-              </span>
-              <button
-                type="button"
-                className="verse-rail-step pressable"
-                onClick={() => railStep(onNextChapter, "next")}
-                disabled={!hasNextChapter}
-                data-tip={`Chapter ${chapter + 1}`}
-                aria-label={`Chapter ${chapter + 1}`}>
-                <ChevronRight size={14} strokeWidth={2.4} aria-hidden />
-              </button>
-            </div>
-
-            <div className="verse-rail-grid" ref={gridRef}>
-              {verses.map((v) => (
-                <a
-                  key={v.verse_number}
-                  href={`#${verseDomId(chapter, v.verse_number)}`}
-                  className="verse-rail-item"
-                  aria-current={v.verse_number === active ? "true" : undefined}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onGoToVerse(v.verse_number);
-                  }}>
-                  <span className="verse-rail-item-label">Verse</span>
-                  <span className="verse-rail-item-n">{v.verse_number}</span>
-                </a>
-              ))}
-            </div>
+          <nav className="verse-rail" aria-label={`Verses in chapter ${chapter}`}>
+            <VerseList chapter={chapter} language={language} active={active} onPrevChapter={() => railStep(onPrevChapter, "prev")} onNextChapter={() => railStep(onNextChapter, "next")} />
           </nav>
         )}
 
@@ -602,19 +532,12 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
         <button type="button" className="pager-btn pressable" onClick={goPrev} disabled={!hasPrev} aria-label="Previous verse">
           <ChevronLeft size={18} strokeWidth={2.5} aria-hidden />
         </button>
-        {/* The label is the index's trigger: it is already the one thing on the
-            screen that says which verse this is out of how many, so "tap it to
-            choose another" needs no new affordance beyond the chevron. */}
-        <button
-          type="button"
-          className="verse-pager-label pager-index pressable"
-          aria-haspopup="dialog"
-          aria-expanded={indexOpen}
-          aria-label={`Verse ${chapter}.${active} of ${last}. Choose a verse`}
-          onClick={() => setIndexOpen(true)}>
+        {/* The label opens the chapter's verse list: it is already the one thing
+            on the screen that says which verse this is out of how many. */}
+        <Link to={{ name: "chapter", chapter }} className="verse-pager-label pager-index pressable" aria-label={`Verse ${chapter}.${active} of ${last}. Choose a verse`}>
           {chapter}.{active} <span className="verse-pager-total">of {last}</span>
-          <ChevronUp size={13} strokeWidth={2.5} className="pager-index-caret" aria-hidden />
-        </button>
+          <List size={13} strokeWidth={2.5} className="pager-index-caret" aria-hidden />
+        </Link>
         {/* Paging is a scroll, so nothing takes focus and nothing is announced
             unless the pager says so itself. Kept off the trigger: a live region
             on a button re-reads its own label every time the finger swipes. */}
@@ -626,19 +549,6 @@ export const VerseViewer: React.FC<VerseViewerProps> = ({ chapter, verses, targe
         </button>
       </div>
 
-      <VerseIndexSheet
-        open={indexOpen}
-        chapter={chapter}
-        chapterName={chapterName}
-        verses={verses}
-        active={active}
-        onGoToVerse={onGoToVerse}
-        onPrevChapter={onPrevChapter}
-        onNextChapter={onNextChapter}
-        hasPrevChapter={hasPrevChapter}
-        hasNextChapter={hasNextChapter}
-        onClose={() => setIndexOpen(false)}
-      />
     </div>
   );
 };

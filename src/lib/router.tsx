@@ -7,7 +7,7 @@ import { useCallback, useLayoutEffect, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { getChapterMeta } from "./gita";
 
-export type Route = { name: "home" } | { name: "verse"; chapter: number; verse: number } | { name: "book"; chapter: number; verse: number } | { name: "search"; q: string } | { name: "saved" } | { name: "settings" };
+export type Route = { name: "home" } | { name: "chapter"; chapter: number } | { name: "verse"; chapter: number; verse: number } | { name: "book"; chapter: number; verse: number } | { name: "search"; q: string } | { name: "saved" } | { name: "settings" };
 
 type NavigateOptions = {
   replace?: boolean;
@@ -51,11 +51,12 @@ function parseLocation(pathname: string, search: string): Route {
     return { name: "book", chapter, verse: clampVerse(verse) };
   }
 
+  // A chapter on its own is its verse list; a verse inside it is the reader.
   if (segments[0] === "chapter") {
     const chapter = Number(segments[1]);
     if (!getChapterMeta(chapter)) return { name: "home" };
-    const verse = segments[2] === "verse" ? Number(segments[3]) : 1;
-    return { name: "verse", chapter, verse: clampVerse(verse) };
+    if (segments[2] !== "verse") return { name: "chapter", chapter };
+    return { name: "verse", chapter, verse: clampVerse(Number(segments[3])) };
   }
 
   return { name: "home" };
@@ -65,6 +66,8 @@ function toPath(route: Route): string {
   switch (route.name) {
     case "home":
       return `${BASE}/`;
+    case "chapter":
+      return `${BASE}/chapter/${route.chapter}`;
     case "verse":
       return `${BASE}/chapter/${route.chapter}/verse/${route.verse}`;
     case "book":

@@ -8,15 +8,16 @@ import { Header } from "./components/Header";
 import { SavedScreen } from "./components/SavedScreen";
 import { SEARCH_PLACEHOLDER, SearchScreen } from "./components/SearchScreen";
 import { Sidebar, TabBar } from "./components/TabBar";
+import { VerseList } from "./components/VerseList";
 import { VerseOfMoment } from "./components/VerseOfMoment";
 import { setRailDirection, VerseViewer } from "./components/VerseViewer";
 import { bookTurn } from "./lib/book";
 import { toggleBookmark } from "./lib/bookmarks";
-import { chapterName, getChapterMeta, getChapters, isReaderResident, loadReader, peekChapter, prefetchChapter } from "./lib/gita";
+import { getChapterMeta, getChapters, isReaderResident, loadReader, peekChapter, prefetchChapter } from "./lib/gita";
 import type { Language, Verse } from "./lib/gita.types";
 import type { KeyActions } from "./lib/keys";
 import { installKeys } from "./lib/keys";
-import { useWide } from "./lib/media";
+import { useWide, useWidePlus } from "./lib/media";
 import { applyUpdate, checkForUpdate, hardReload } from "./lib/sw";
 import type { Route } from "./lib/router";
 import { Link, navigate, useRoute, useScrollRestoration } from "./lib/router";
@@ -38,10 +39,12 @@ const APP_NAME: Record<Language, string> = { en: "Bhagavad Geeta", kn: "ಭಗ�
 /** No title or corpus line: the nav bar already names the app, and the random
  *  verse is what should greet the reader. */
 const Home: React.FC<{ language: Language }> = ({ language }) => {
+  // From 1280 the verse list stands beside the reader, so a chapter opens on its first verse.
+  const widePlus = useWidePlus();
   return (
     <div className="animate-fade-in home-container">
       <VerseOfMoment language={language} />
-      <ChapterList chapters={chapters} language={language} onSelectChapter={(id) => navigate({ name: "verse", chapter: id, verse: 1 })} />
+      <ChapterList chapters={chapters} language={language} onSelectChapter={(id) => navigate(widePlus ? { name: "verse", chapter: id, verse: 1 } : { name: "chapter", chapter: id })} />
     </div>
   );
 };
@@ -124,7 +127,6 @@ const Reader: React.FC<{ chapter: number; verse: number }> = ({ chapter, verse }
       verses={verses}
       targetVerse={verse}
       language={language}
-      chapterName={chapterName(chapter, language)}
       // "preserve" leaves pendingScroll null so the router's restoration layout
       // effect (which runs after this child's) does not clobber the scroll the
       // reader is about to perform itself.
@@ -373,6 +375,8 @@ const BookScreen: React.FC<{ chapter: number; verse: number }> = ({ chapter, ver
 
 const Screen: React.FC<{ route: ReturnType<typeof useRoute>; language: Language }> = ({ route, language }) => {
   switch (route.name) {
+    case "chapter":
+      return <VerseList chapter={route.chapter} language={language} onPrevChapter={() => navigate({ name: "chapter", chapter: route.chapter - 1 }, { replace: true })} onNextChapter={() => navigate({ name: "chapter", chapter: route.chapter + 1 }, { replace: true })} />;
     case "verse":
       return <Reader chapter={route.chapter} verse={route.verse} />;
     case "book":
@@ -393,6 +397,7 @@ const AppShell: React.FC = () => {
   const route = useRoute();
   const { language, theme, toggleTheme } = useSettings();
   const wide = useWide();
+  const widePlus = useWidePlus();
   useScrollRestoration(route);
 
   const [palette, setPalette] = useState(false);
@@ -563,6 +568,9 @@ const AppShell: React.FC = () => {
         // is labelled with where it goes back to.
         // The book has left through its own return above, so the reader is the
         // only screen with a back item here.
+        // Home > chapter > verse: each level steps back to the one above it. From
+        // 1280 the verse list is the reader's sidebar, so the reader steps back Home.
+        back={route.name === "chapter" || (inReader && widePlus) ? { label: "Home", onClick: () => navigate({ name: "home" }) } : inReader ? { label: "Verses", onClick: () => navigate({ name: "chapter", chapter: route.chapter }) } : undefined}
         title={APP_NAME[language]}
         titleLang={language}
         // The app name lives in the bar beside the mark, at every width and every

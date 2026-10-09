@@ -121,8 +121,15 @@
     U+200C- U+200D,
     U+25CC;
 }
+/* Script size balance. Noto Kannada and Telugu draw larger than Latin at the
+   same font-size, so each face is scaled by its own size-adjust: Kannada and Telugu 90%,
+   Latin and Devanagari 100%. This is the one place to tune it —
+   every size in the app, any element tagged lang="kn" or "te", follows. The
+   descriptor cannot read a custom property, so the number is written on each
+   weight of the face (four lines). */
 @font-face {
   font-family: "Noto Sans Kannada";
+  size-adjust: 90%;
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -145,6 +152,7 @@
 }
 @font-face {
   font-family: "Noto Sans Kannada";
+  size-adjust: 90%;
   font-style: normal;
   font-weight: 600;
   font-display: swap;
@@ -167,6 +175,7 @@
 }
 @font-face {
   font-family: "Noto Sans Telugu";
+  size-adjust: 90%;
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -189,6 +198,7 @@
 }
 @font-face {
   font-family: "Noto Sans Telugu";
+  size-adjust: 90%;
   font-style: normal;
   font-weight: 600;
   font-display: swap;
@@ -236,18 +246,6 @@
   --font-deva: "Noto Sans Devanagari", "Devanagari Sangam MN", "Nirmala UI", sans-serif;
   --font-knda: "Noto Sans Kannada", "Kannada Sangam MN", "Nirmala UI", sans-serif;
   --font-telu: "Noto Sans Telugu", "Telugu Sangam MN", "Nirmala UI", sans-serif;
-}
-
-/* Kannada and Telugu set larger than Latin at the same size, so the reading
-   text steps down 2px in those languages. Root-scoped and qualified, so it
-   outranks every :root tier; desktop.css and book.css restate it per tier.
-   The Latin transliteration and the UI chrome keep their sizes. */
-:root[data-lang="kn"],
-:root[data-lang="te"] {
-  --fs-verse: calc((1.3125rem - 2px) * var(--reading-scale));
-  --fs-trans: calc((1rem - 2px) * var(--reading-scale));
-  --fs-comment: calc((0.875rem - 2px) * var(--reading-scale));
-  --fs-gloss: calc((0.8125rem - 2px) * var(--reading-scale));
 }
 
 [data-font="source"] {
@@ -1865,6 +1863,123 @@ input:focus-visible {
   color: var(--ink-2);
 }
 
+/* ----------------------------------------------------------- verse list */
+
+.verse-list-screen {
+  margin: 0 auto;
+  padding-top: var(--sp-4);
+}
+
+/* The chapter, and the two steps either side of it. */
+.verse-list-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.verse-list-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+/* The same round glass as the nav's back item. A bare chevron beside the
+   browser's own back button is ambiguous, so the tooltip names where it goes. */
+.verse-list-step {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--mat-chrome);
+  -webkit-backdrop-filter: var(--mat-blur-thin);
+  backdrop-filter: var(--mat-blur-thin);
+  border: 0.5px solid var(--mat-border);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 var(--spec-top);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.verse-list-step:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.verse-list-eyebrow {
+  color: var(--accent);
+  font-size: var(--fs-footnote);
+  font-weight: var(--fw-semibold);
+}
+
+.verse-list-name {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-title1);
+}
+
+.verse-list-meaning {
+  color: var(--ink-3);
+  font-size: var(--fs-subhead);
+}
+
+.verse-list {
+  display: grid;
+  /* An implicit auto track grows to the longest unbreakable word, and a
+     Devanagari compound is long enough to push the rows past the rail. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-2);
+  list-style: none;
+}
+
+/* A row, not a reading card: the number, two lines of the sloka in small
+   type, and the chevron that says it opens. */
+.verse-list-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  color: var(--ink-1);
+  text-decoration: none;
+}
+
+.verse-list-card[aria-current="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+
+.verse-list-number {
+  flex: 0 0 2.75rem;
+  color: var(--accent);
+  font-size: var(--fs-footnote);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.verse-list-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--ramp-verse-fallback);
+  font-size: var(--fs-footnote);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.verse-list-chevron {
+  flex: none;
+  color: var(--ink-4);
+}
+
 /* --------------------------------------------------------- verse reader */
 
 /* No cap below the sidebar breakpoint: the reader owns the whole screen there,
@@ -2327,6 +2442,7 @@ input:focus-visible {
   background: none;
   border: 0;
   border-radius: var(--r-pill);
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -2344,191 +2460,6 @@ input:focus-visible {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-/* --------------------------------------------------------- verse index sheet
-   The phone's rail. A chapter of 78 verses cannot be reached by swiping the
-   track, and the pager only steps by one, so the whole chapter is raised as a
-   grid of numbers from the control that already names the verse. */
-
-.verse-sheet {
-  position: fixed;
-  inset: auto 0 0 0;
-  width: 100%;
-  max-width: none;
-  max-height: min(62dvh, 560px);
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  color: var(--ink-1);
-  background: var(--mat-chrome);
-  -webkit-backdrop-filter: var(--mat-blur);
-  backdrop-filter: var(--mat-blur);
-  border: 0;
-  border-bottom: 0;
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  box-shadow: var(--spec), var(--el-3);
-  overflow: hidden;
-  translate: 0 100%;
-  transition:
-    translate var(--dur-base) var(--ease-out-ios),
-    overlay var(--dur-base) allow-discrete,
-    display var(--dur-base) allow-discrete;
-}
-
-.verse-sheet[open] {
-  translate: 0 0;
-}
-
-@starting-style {
-  .verse-sheet[open] {
-    translate: 0 100%;
-  }
-}
-
-.verse-sheet::backdrop {
-  background: var(--scrim-dialog);
-  opacity: 1;
-  transition:
-    opacity var(--dur-base) var(--ease-out-ios),
-    overlay var(--dur-base) allow-discrete,
-    display var(--dur-base) allow-discrete;
-}
-
-.verse-sheet:not([open])::backdrop {
-  opacity: 0;
-}
-
-@starting-style {
-  .verse-sheet[open]::backdrop {
-    opacity: 0;
-  }
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .verse-sheet {
-    background: var(--surface-1);
-  }
-}
-
-/* The grabber and the chapter header are one drag surface: a 5pt bar is not a
-   target a thumb can find, and the header above the grid has nothing else to do
-   with a downward drag. */
-.verse-sheet-drag {
-  flex: 0 0 auto;
-  touch-action: none;
-}
-
-.verse-sheet-grabber {
-  width: 36px;
-  height: 5px;
-  margin: var(--sp-2) auto 0;
-  border-radius: var(--r-pill);
-  background: var(--ink-4);
-  opacity: 0.5;
-}
-
-.verse-sheet-head {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-}
-
-.verse-sheet-head-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: center;
-}
-
-.verse-sheet-eyebrow {
-  display: block;
-  font-size: var(--fs-caption2);
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-3);
-}
-
-.verse-sheet-name {
-  display: block;
-  font-family: var(--font-read);
-  font-size: var(--fs-subhead);
-  color: var(--ink-1);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* auto-fill rather than a fixed column count: at AX Dynamic Type the cells grow
-   and the grid drops to four columns and then three, instead of clipping. */
-.verse-sheet-grid {
-  flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-  gap: var(--sp-1);
-  padding: var(--sp-2) var(--sp-3);
-  padding-bottom: calc(var(--sa-bottom) + var(--sp-4));
-  padding-left: max(var(--sp-3), var(--sa-left));
-  padding-right: max(var(--sp-3), var(--sa-right));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.verse-sheet-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--tap-min);
-  font-size: var(--fs-subhead);
-  font-weight: var(--fw-medium);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-2);
-  background: var(--glass);
-  border: 0.5px solid var(--glass-border);
-  border-radius: var(--r-lg);
-  cursor: pointer;
-}
-
-.verse-sheet-cell[aria-current="true"] {
-  color: var(--accent);
-  font-weight: var(--fw-semibold);
-  background: var(--accent-soft);
-  border-color: transparent;
-  box-shadow: var(--spec);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .verse-sheet {
-    transition:
-      opacity var(--dur-fast) linear,
-      overlay var(--dur-fast) allow-discrete,
-      display var(--dur-fast) allow-discrete;
-    translate: none;
-    opacity: 0;
-  }
-
-  .verse-sheet[open] {
-    translate: none;
-    opacity: 1;
-  }
-
-  @starting-style {
-    .verse-sheet[open] {
-      translate: none;
-      opacity: 0;
-    }
-  }
-}
-
-/* The wide reader has the rail; the sheet is the narrow window's stand-in for
-   it and must never appear beside it. */
-@media (min-width: 900px) {
-  .verse-sheet {
-    display: none;
-  }
 }
 
 .verse-pager-total {
@@ -2953,20 +2884,8 @@ input:focus-visible {
   }
 }
 
-@keyframes rail-out-left {
-  to {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-}
 @keyframes rail-in-right {
   from {
-    opacity: 0;
-    transform: translateX(12px);
-  }
-}
-@keyframes rail-out-right {
-  to {
     opacity: 0;
     transform: translateX(12px);
   }
