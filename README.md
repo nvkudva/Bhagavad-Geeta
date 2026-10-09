@@ -10,6 +10,26 @@ The whole corpus is generated into static JSON at build time, so the reader work
 
 ![The desktop reader showing a verse column with word meanings alongside](public/screenshots/wide.jpg)
 
+## Screenshots
+
+On a phone: the chapter list, a chapter's verses, a verse in Kannada, light mode, and book mode.
+
+<p>
+  <img src="docs/screenshots/home-dark.jpg" width="19%" alt="Home screen with a verse and the chapter list" />
+  <img src="docs/screenshots/list-dark.jpg" width="19%" alt="A chapter's verse list" />
+  <img src="docs/screenshots/verse-kn.jpg" width="19%" alt="A verse with Kannada script and translation" />
+  <img src="docs/screenshots/verse-light.jpg" width="19%" alt="The reader in light mode" />
+  <img src="docs/screenshots/book.jpg" width="19%" alt="Book mode, one page" />
+</p>
+
+On desktop: three themes, each in dark and light. Shown are Kumkum dark, Saffron light and Nila dark.
+
+<p>
+  <img src="docs/screenshots/dark-kumkum.jpg" width="32%" alt="Desktop reader, Kumkum theme, dark" />
+  <img src="docs/screenshots/light-saffron.jpg" width="32%" alt="Desktop reader, Saffron theme, light" />
+  <img src="docs/screenshots/dark-nila.jpg" width="32%" alt="Desktop reader, Nila theme, dark" />
+</p>
+
 ## Requirements
 
 - Node `^20.19.0 || >=22.12.0` (Vite 7)
