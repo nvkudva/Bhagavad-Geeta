@@ -1967,7 +1967,6 @@ input:focus-visible {
   color: var(--ramp-verse-fallback);
   font-size: var(--fs-footnote);
   white-space: pre-line;
-  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
